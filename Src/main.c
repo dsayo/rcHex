@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sbus.h"
+#include "term.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -84,7 +85,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -104,6 +104,7 @@ int main(void)
   RXData rx_data;
 
   HAL_UART_Receive_DMA(&huart1, packet, 25);
+  init_term(&huart2);
   /* USER CODE END 2 */
  
  
@@ -118,9 +119,10 @@ int main(void)
 	  if(ready)
 	  {
 		  sbus_format(packet, &rx_data);
+		  print_channels(rx_data);
 		  ready=0;
 	  }
-	  HAL_Delay(500);
+	  /* Calculations */
   }
   /* USER CODE END 3 */
 }

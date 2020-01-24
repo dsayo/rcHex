@@ -16,6 +16,8 @@
 #define PACKET_SZ 24
 #define FAILSAFE   0x08
 #define LOST_FRAME  0x04
+#define DEFAULT_MIN 172
+#define DEFAULT_MAX 1811
 
 #define CHAN_LONG 0  /* Longitudinal axis movement */
 #define CHAN_TRAN 1  /* Transverse axis movement   */
