@@ -13,11 +13,14 @@
 #define START_BYTE 0x0F
 #define END_BYTE   0x00
 #define TIMEOUT_MS 7
-#define PACKET_SZ 24
+#define PACKET_SZ 25
 #define FAILSAFE   0x08
 #define LOST_FRAME  0x04
 #define DEFAULT_MIN 172
 #define DEFAULT_MAX 1811
+
+/* TODO: Channel scaling */
+/* TODO: packet aligning */
 
 #define CHAN_LONG 0  /* Longitudinal axis movement */
 #define CHAN_TRAN 1  /* Transverse axis movement   */

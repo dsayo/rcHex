@@ -62,9 +62,6 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t data2[25];
-uint8_t data1[] = {'c'};
-RXData data;
 
 /* USER CODE END 0 */
 
@@ -103,6 +100,7 @@ int main(void)
   uint8_t packet[PACKET_SZ]; /* SBUS packet data */
   RXData rx_data;
 
+  __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
   init_term(&huart2);
   /* USER CODE END 2 */
@@ -116,6 +114,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  if (HAL_UART_GetError(&huart1))
+	  {
+		  /* Overrun error, flush and restart */
+		  huart1.ErrorCode = HAL_UART_ERROR_NONE;
+		  __HAL_UART_FLUSH_DRREGISTER(&huart1);
+		  HAL_UART_Receive_DMA(&huart1, packet, 25);
+	  }
 	  if(ready)
 	  {
 		  sbus_format(packet, &rx_data);
@@ -274,7 +279,10 @@ static void MX_GPIO_Init(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	ready = 1;
+	if (huart->Instance == USART1)
+	{
+		ready = 1;
+	}
 }
 
 /* USER CODE END 4 */

@@ -99,6 +99,8 @@ void init_term(UART_HandleTypeDef *huart)
     term_write_str("CH 3:\n");
     term_cursor_move(4, 1);
     term_write_str("CH 4:\n");
+    term_cursor_move(5, 1);
+    term_write_str("CH 5:\n");
 }
 
 
@@ -112,4 +114,6 @@ void print_channels(RXData data)
 	term_draw_bar(data.channels[2]);
 	term_cursor_move(4, 7);
 	term_draw_bar(data.channels[3]);
+	term_cursor_move(5, 7);
+	term_draw_bar(data.channels[4]);
 }

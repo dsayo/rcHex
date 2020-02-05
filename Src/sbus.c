@@ -7,6 +7,8 @@
 #include "sbus.h"
 #include "main.h"
 
+uint8_t start_idx = 0;
+
 /* Reads SBUS data and formats it into channel data.
  */
 void sbus_format(uint8_t *pkt, RXData *data)
@@ -15,7 +17,7 @@ void sbus_format(uint8_t *pkt, RXData *data)
 	data->channels[1] = 0x7FF & (((uint16_t)pkt[2] >> 3) | ((uint16_t)pkt[3] << 5));
 	data->channels[2] = 0x7FF & (((uint16_t)pkt[3] >> 6) | ((uint16_t)pkt[4] << 2) | ((uint16_t)pkt[5] << 10));
 	data->channels[3] = 0x7FF & (((uint16_t)pkt[5] >> 1) | ((uint16_t)pkt[6] << 7));
-	//data->channels[4] = 0x7FF & (((uint16_t)pkt[6] >> 4) | ((uint16_t)pkt[7] << 4));
+	data->channels[4] = 0x7FF & (((uint16_t)pkt[6] >> 4) | ((uint16_t)pkt[7] << 4));
 	/* ... */
 
 	data->failsafe = FAILSAFE & pkt[23];
