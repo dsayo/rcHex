@@ -17,10 +17,13 @@
 #define FAILSAFE   0x08
 #define LOST_FRAME  0x04
 #define DEFAULT_MIN 172
+#define DEFAULT_MID 992
 #define DEFAULT_MAX 1811
 
+/* Calculates packet index with offset in case of misalignment */
+#define SHFT(i) ((si + i) % PACKET_SZ)
+
 /* TODO: Channel scaling */
-/* TODO: packet aligning */
 
 #define CHAN_LONG 0  /* Longitudinal axis movement */
 #define CHAN_TRAN 1  /* Transverse axis movement   */

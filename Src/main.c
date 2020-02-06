@@ -121,10 +121,27 @@ int main(void)
 		  __HAL_UART_FLUSH_DRREGISTER(&huart1);
 		  HAL_UART_Receive_DMA(&huart1, packet, 25);
 	  }
+
 	  if(ready)
 	  {
 		  sbus_format(packet, &rx_data);
 		  print_channels(rx_data);
+		  if (rx_data.channels[4] > DEFAULT_MID)
+		  {
+			  GPIOF->ODR |= GPIO_PIN_1;
+		  }
+		  else
+		  {
+			  GPIOF->ODR &= ~GPIO_PIN_1;
+		  }
+		  if (rx_data.channels[0] > DEFAULT_MID)
+		  {
+			  GPIOF->ODR |= GPIO_PIN_0;
+		  }
+		  else
+		  {
+			  GPIOF->ODR &= ~GPIO_PIN_0;
+		  }
 		  ready=0;
 	  }
 	  /* Calculations */
@@ -269,9 +286,21 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PF0 PF1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
 }
 
