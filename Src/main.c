@@ -24,7 +24,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sbus.h"
+#include "ssc.h"
 #include "term.h"
+#include "controls.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,9 +47,10 @@
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_rx;
+extern uint8_t armed;
 
 /* USER CODE BEGIN PV */
-uint8_t ready = 0;
+volatile uint8_t ready = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,7 +105,9 @@ int main(void)
 
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
-  init_term(&huart2);
+
+  //init_term(&huart2);
+  init_stance();
   /* USER CODE END 2 */
  
  
@@ -114,6 +119,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
 	  if (HAL_UART_GetError(&huart1))
 	  {
 		  /* Overrun error, flush and restart */
@@ -125,7 +131,7 @@ int main(void)
 	  if(ready)
 	  {
 		  sbus_format(packet, &rx_data);
-		  print_channels(rx_data);
+		  //print_channels(rx_data);
 		  if (rx_data.channels[4] > DEFAULT_MID)
 		  {
 			  GPIOF->ODR |= GPIO_PIN_1;
@@ -143,8 +149,23 @@ int main(void)
 			  GPIOF->ODR &= ~GPIO_PIN_0;
 		  }
 		  ready=0;
+
+		  if (CH_ARM > DEFAULT_MID)
+		  {
+			  arm();
+		  }
+		  else
+		  {
+			  disarm();
+		  }
 	  }
-	  /* Calculations */
+
+	  if (armed)
+	  {
+		  servo_move(4, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
+		  servo_move(8, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
+		  ssc_cmd_cr();
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -247,12 +268,11 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.Mode = UART_MODE_TX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_DMADISABLEONERROR_INIT;
-  huart2.AdvancedInit.DMADisableonRxError = UART_ADVFEATURE_DMA_DISABLEONRXERROR;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
