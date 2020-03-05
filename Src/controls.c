@@ -26,7 +26,12 @@ void init_stance()
 
 	for (i = 0; i < 32; i++)
 	{
-		servo_move(i, CENTER_PW, 65535);
+		servo_move(i, CENTER_PW, 0);
 	}
 	ssc_cmd_cr();
+}
+
+void leg_forward()
+{
+
 }

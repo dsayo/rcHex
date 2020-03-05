@@ -162,9 +162,18 @@ int main(void)
 
 	  if (armed)
 	  {
-		  servo_move(4, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
-		  servo_move(8, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
+		  servo_move(LT_FRT_COXA, CL(MAX_PW - (rx_data.channels[0] >> 1)), NO_ARG);
+		  servo_move(LT_FRT_FEMUR, CL(MAX_PW - (rx_data.channels[2] >> 1)), NO_ARG);
+		  servo_move(LT_FRT_TIBIA, CL(MAX_PW - (rx_data.channels[1] >> 1)), NO_ARG);
+
+		  servo_move(RT_FRT_COXA, CL(MIN_PW + (rx_data.channels[0] >> 1)), NO_ARG);
+		  servo_move(RT_FRT_FEMUR, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
+		  servo_move(RT_FRT_TIBIA, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
+
 		  ssc_cmd_cr();
+	  }
+	  else{
+		  init_stance();
 	  }
   }
   /* USER CODE END 3 */
