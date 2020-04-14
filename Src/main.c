@@ -107,7 +107,7 @@ int main(void)
   HAL_UART_Receive_DMA(&huart1, packet, 25);
 
   //init_term(&huart2);
-  init_stance();
+  //init_stance();
   /* USER CODE END 2 */
  
  
@@ -150,7 +150,7 @@ int main(void)
 		  }
 		  ready=0;
 
-		  if (CH_ARM > DEFAULT_MID)
+		  if (rx_data.channels[CH_ARM] > DEFAULT_MID)
 		  {
 			  arm();
 		  }
@@ -162,18 +162,18 @@ int main(void)
 
 	  if (armed)
 	  {
-		  servo_move(LT_FRT_COXA, CL(MAX_PW - (rx_data.channels[0] >> 1)), NO_ARG);
-		  servo_move(LT_FRT_FEMUR, CL(MAX_PW - (rx_data.channels[2] >> 1)), NO_ARG);
-		  servo_move(LT_FRT_TIBIA, CL(MAX_PW - (rx_data.channels[1] >> 1)), NO_ARG);
+		  servo_move(LT_BCK_TIBIA, CL(MAX_PW - (rx_data.channels[0] >> 1)), NO_ARG);
+		  //servo_move(LT_FRT_FEMUR, CL(MAX_PW - (rx_data.channels[2] >> 1)), NO_ARG);
+		  //servo_move(LT_FRT_TIBIA, CL(MAX_PW - (rx_data.channels[1] >> 1)), NO_ARG);
 
-		  servo_move(RT_FRT_COXA, CL(MIN_PW + (rx_data.channels[0] >> 1)), NO_ARG);
-		  servo_move(RT_FRT_FEMUR, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
-		  servo_move(RT_FRT_TIBIA, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
+		  servo_move(RT_BCK_TIBIA, CL(MIN_PW + (rx_data.channels[0] >> 1)), NO_ARG);
+		  //servo_move(RT_FRT_FEMUR, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
+		  //servo_move(RT_FRT_TIBIA, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
 
 		  ssc_cmd_cr();
 	  }
 	  else{
-		  init_stance();
+		  //init_stance();
 	  }
   }
   /* USER CODE END 3 */
