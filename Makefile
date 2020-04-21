@@ -1,6 +1,6 @@
 TARGET   = a.out
 CC       = gcc
-CCFLAGS  = -pedantic -Wall -Werror
+CCFLAGS  = -pedantic -Wall -Wdouble-promotion -Wfloat-conversion
 LDFLAGS  = -lm
 SOURCES  = $(wildcard *.c)
 INCLUDES = $(wildcard *.h)

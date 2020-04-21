@@ -35,6 +35,9 @@ typedef struct RXData {
 	uint8_t lost_frame;          /* Lost frame   */
 } RXData;
 
+#define DELTA_THRESH 20
+
 void sbus_format(uint8_t *pkt, RXData *data); /* Read a packet, return true if complete, else false */
+uint8_t ctrl_delta(RXData *old, RXData *new); /* */
 
 #endif /* INC_SBUS_H_ */

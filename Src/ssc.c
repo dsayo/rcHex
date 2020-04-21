@@ -11,6 +11,15 @@ extern UART_HandleTypeDef huart2;
 
 uint8_t buf[MAX_ARG_SZ];
 
+/* SSC channel mapping */
+const uint8_t ssc_channel[NUM_LEGS][NUM_SERVO_PER_LEG] =
+{	               /* Right */
+	{31, 29, 27}, {25, 23, 21}, {19, 17, 16},
+	/* Front		                   Back */
+	{15, 13, 11}, { 9,  7,  5}, { 3,  1,  0}
+	               /* Left  */
+};
+
 /* Convert integer to split UART decimal numbers in a buffer.
  * Returns number of characters to read in buffer.
  */
@@ -53,8 +62,12 @@ uint8_t itoa(uint8_t buf[MAX_ARG_SZ], uint16_t num)
 }
 
 /* Send command to move a servo */
-void servo_move(uint8_t channel, uint16_t pulse_width, uint16_t speed)
+void servo_move(uint8_t channel, int16_t angle, uint16_t speed)
 {
+	uint16_t pulse_width;
+
+	pulse_width = CL(CENTER_PW + angle * PW_PER_DEGREE);
+
 	ssc_cmd_ch(channel);
 	ssc_cmd_pw(pulse_width);
 	if (speed)

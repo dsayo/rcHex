@@ -4,6 +4,7 @@
  *  Created on: Jan 23, 2020
  *      Author: dsayo
  */
+#include <stdlib.h>
 #include "sbus.h"
 #include "main.h"
 
@@ -56,4 +57,21 @@ void sbus_format(uint8_t *pkt, RXData *data)
 	data->failsafe = FAILSAFE & pkt[23];
 	data->lost_frame = LOST_FRAME & pkt[23];
 	return;
+}
+
+/* Compares changes in control data to a threshold.
+ * Returns 0 if no change, 1 if there is.
+ */
+uint8_t ctrl_delta(RXData *old, RXData *new)
+{
+	int i;
+
+	for (i = 0; i < 16; i++)
+	{
+		if (abs(old->channels[i] - new->channels[i]) > DELTA_THRESH)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }

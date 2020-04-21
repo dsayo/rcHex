@@ -31,7 +31,30 @@ void init_stance()
 	ssc_cmd_cr();
 }
 
-void leg_forward()
+void set_all_angles(float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG])
 {
+	int leg;
+	int servo;
+	uint32_t pw;
 
+	for (leg = 0; leg < NUM_LEGS; leg++)
+	{
+		for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
+		{
+			switch(leg)
+			{
+				case LEG_1:
+				case LEG_2:
+				case LEG_3:
+					pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
+					break;
+
+				default:  /* Mirror for left legs */
+					pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
+					break;
+			}
+
+			servo_move(ssc_channel[leg][servo], pw, NO_ARG);
+		}
+	}
 }

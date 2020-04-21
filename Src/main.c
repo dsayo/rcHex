@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <string.h>
 #include "sbus.h"
 #include "ssc.h"
 #include "term.h"
@@ -51,6 +52,7 @@ extern uint8_t armed;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t ready = 0;
+volatile uint8_t delta = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,7 +103,9 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   uint8_t packet[PACKET_SZ]; /* SBUS packet data */
+  RXData old_rx_data;
   RXData rx_data;
+  float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
 
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
@@ -119,7 +123,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
 	  if (HAL_UART_GetError(&huart1))
 	  {
 		  /* Overrun error, flush and restart */
@@ -130,8 +133,12 @@ int main(void)
 
 	  if(ready)
 	  {
+		  /* Parse control data when ready */
+		  ready = 0;
+		  memcpy(&old_rx_data, &rx_data, sizeof(RXData));
 		  sbus_format(packet, &rx_data);
 		  //print_channels(rx_data);
+		  /* LEDS
 		  if (rx_data.channels[4] > DEFAULT_MID)
 		  {
 			  GPIOF->ODR |= GPIO_PIN_1;
@@ -148,32 +155,38 @@ int main(void)
 		  {
 			  GPIOF->ODR &= ~GPIO_PIN_0;
 		  }
-		  ready=0;
+		  */
 
 		  if (rx_data.channels[CH_ARM] > DEFAULT_MID)
 		  {
+			  GPIOF->ODR |= GPIO_PIN_1;
 			  arm();
 		  }
 		  else
 		  {
+			  GPIOF->ODR &= ~GPIO_PIN_1;
 			  disarm();
+		  }
+
+		  /* Check deltas */
+		  if (armed)
+		  {
+			  delta = ctrl_delta(&old_rx_data, &rx_data);
+			  //servo_move(LT_BCK_TIBIA, CL(MAX_PW - (rx_data.channels[0] >> 1)), NO_ARG);
+			  //servo_move(LT_FRT_FEMUR, CL(MAX_PW - (rx_data.channels[2] >> 1)), NO_ARG);
+			  //servo_move(LT_FRT_TIBIA, CL(MAX_PW - (rx_data.channels[1] >> 1)), NO_ARG);
+
+			  //servo_move(RT_BCK_TIBIA, CL(MIN_PW + (rx_data.channels[0] >> 1)), NO_ARG);
+			  //servo_move(RT_FRT_FEMUR, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
+			  //servo_move(RT_FRT_TIBIA, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
+
+			  //ssc_cmd_cr();
 		  }
 	  }
 
-	  if (armed)
+	  if (armed && delta)
 	  {
-		  servo_move(LT_BCK_TIBIA, CL(MAX_PW - (rx_data.channels[0] >> 1)), NO_ARG);
-		  //servo_move(LT_FRT_FEMUR, CL(MAX_PW - (rx_data.channels[2] >> 1)), NO_ARG);
-		  //servo_move(LT_FRT_TIBIA, CL(MAX_PW - (rx_data.channels[1] >> 1)), NO_ARG);
-
-		  servo_move(RT_BCK_TIBIA, CL(MIN_PW + (rx_data.channels[0] >> 1)), NO_ARG);
-		  //servo_move(RT_FRT_FEMUR, CL(MIN_PW + (rx_data.channels[2] >> 1)), NO_ARG);
-		  //servo_move(RT_FRT_TIBIA, CL(MIN_PW + (rx_data.channels[1] >> 1)), NO_ARG);
-
-		  ssc_cmd_cr();
-	  }
-	  else{
-		  //init_stance();
+		  delta = 0;
 	  }
   }
   /* USER CODE END 3 */

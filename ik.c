@@ -3,8 +3,9 @@
 #include <math.h>
 #include "ik.h"
 
+float angle_delta[NUM_LEGS][NUM_SERVOS_PER_LEG];
 
-void ik(Command command)
+void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
 {
    float total_x;
    float total_y;
@@ -15,28 +16,6 @@ void ik(Command command)
    float body_ikx;
    float body_iky;
    float body_ikz;
-
-   /* Body IK */
-   total_x = INIT_POS_X_1 + OFFSET_X_1 + command.pos_x;
-   total_y = INIT_POS_Y_1 + OFFSET_Y_1 + command.pos_y;
-   dist_body_foot = sqrt(total_x * total_x + total_y * total_y);
-   theta = atan2(total_y, total_x);
-   roll_z = tan(command.rot_y * M_PI / 180) * total_x;
-   pitch_z = tan(command.rot_x * M_PI / 180) * total_y;
-   body_ikx = cos(theta + (command.rot_z * M_PI / 180)) * 
-              dist_body_foot - total_x;
-   body_iky = sin(theta + (command.rot_z * M_PI / 180)) *
-              dist_body_foot - total_y;
-   body_ikz = roll_z + pitch_z;
-  
-   printf("%f\n", dist_body_foot); 
-   printf("%f\n", theta); 
-   printf("%f\n", roll_z); 
-   printf("%f\n", pitch_z); 
-   printf("%f\n", body_ikx); 
-   printf("%f\n", body_iky); 
-   printf("%f\n", body_ikz); 
-
 
    float new_pos_x;
    float new_pos_y;
@@ -49,58 +28,110 @@ void ik(Command command)
    float alpha1;
    float alpha2;
    float gamma;
-
-   /* Leg IK */
-   new_pos_x = INIT_POS_X_1 + command.pos_x + body_ikx;
-   new_pos_y = INIT_POS_Y_1 + command.pos_y + body_iky;
-   new_pos_z = INIT_POS_Z_1 + command.pos_z + body_ikz;
-   l = sqrt(new_pos_x * new_pos_x + new_pos_y * new_pos_y);
-   hf = sqrt((l - COXA_LEN) * (l - COXA_LEN) + new_pos_z * new_pos_z);
-   a1 = atan2(l - COXA_LEN, new_pos_z) * 180 / M_PI;
-   a2 = acos((FEMUR_LEN * FEMUR_LEN + hf * hf - TIBIA_LEN * TIBIA_LEN) /
-             (2 * FEMUR_LEN * hf)) * 180 / M_PI;
-   b1 = acos((FEMUR_LEN * FEMUR_LEN + TIBIA_LEN * TIBIA_LEN - hf * hf) / 
-             (2 * FEMUR_LEN * TIBIA_LEN)) * 180 / M_PI;
-   alpha1 = 90 - (a1 + a2);
-   alpha2 = 90 - b1;
-   gamma = atan2(new_pos_y, new_pos_x) * 180 / M_PI;
-
-   printf("\n%f\n", new_pos_x);
-   printf("%f\n", new_pos_y);
-   printf("%f\n", new_pos_z);
-   printf("%f\n", l);
-   printf("%f\n", hf);
-   printf("%f\n", a1);
-   printf("%f\n", a2);
-   printf("%f\n", b1);
-   printf("%f\n", alpha1);
-   printf("%f\n", alpha2);
-   printf("%f\n", gamma);
-
+   
    float coxa_angle;
    float femur_angle;
    float tibia_angle;
+   
+   int leg;
 
-   coxa_angle = gamma - 45;
-   femur_angle = alpha1;
-   tibia_angle = alpha2;
+   for (leg = 0; leg < NUM_LEGS; leg++)
+   {
+      /* Body IK */
+      total_x = INIT_POS_X[leg] + OFFSET_X[leg] + command.pos_x;
+      total_y = INIT_POS_Y[leg] + OFFSET_Y[leg] + command.pos_y;
+      dist_body_foot = sqrtf(total_x * total_x + total_y * total_y);
+      theta = atan2f(total_y, total_x);
+      roll_z = tanf(command.rot_y * PI / 180) * total_x;
+      pitch_z = tanf(command.rot_x * PI / 180) * total_y;
+      body_ikx = cosf(theta + (command.rot_z * PI / 180)) * 
+         dist_body_foot - total_x;
+      body_iky = sinf(theta + (command.rot_z * PI / 180)) *
+         dist_body_foot - total_y;
+      body_ikz = roll_z + pitch_z;
 
-   printf("\nRF_COXA: %d\n", (int)coxa_angle + 90);
-   printf("RF_FEMUR: %d\n", (int)femur_angle + 90);
-   printf("RF_TIBIA: %d\n", (int)tibia_angle + 90);
+      /* Leg IK */
+      new_pos_x = INIT_POS_X[leg] + command.pos_x + body_ikx;
+      new_pos_y = INIT_POS_Y[leg] + command.pos_y + body_iky;
+      new_pos_z = INIT_POS_Z[leg] + command.pos_z + body_ikz;
+      l = sqrtf(new_pos_x * new_pos_x + new_pos_y * new_pos_y);
+      hf = sqrtf((l - COXA_LEN) * (l - COXA_LEN) + new_pos_z * new_pos_z);
+      a1 = atan2f(l - COXA_LEN, new_pos_z) * 180 / PI;
+      a2 = acosf((FEMUR_LEN * FEMUR_LEN + hf * hf - TIBIA_LEN * TIBIA_LEN) /
+            (2 * FEMUR_LEN * hf)) * 180 / PI;
+      b1 = acosf((FEMUR_LEN * FEMUR_LEN + TIBIA_LEN * TIBIA_LEN - hf * hf) / 
+            (2 * FEMUR_LEN * TIBIA_LEN)) * 180 / PI;
+      alpha1 = 90 - (a1 + a2);
+      alpha2 = 90 - b1;
+      gamma = atan2f(new_pos_y, new_pos_x) * 180 / PI;
+
+      switch (leg)
+      {
+         case LEG_1:
+            coxa_angle = gamma - 45;
+            break;
+         case LEG_2:
+            coxa_angle = gamma;
+            break;
+         case LEG_3:
+            coxa_angle = gamma + 45;
+            break;
+         case LEG_4:
+            coxa_angle = gamma + 135;
+            break;
+         case LEG_5:
+            coxa_angle = (gamma - 180 > -180) ? (gamma - 180) : (gamma + 180);
+            break;
+         case LEG_6:
+            coxa_angle = gamma - 135;
+            break;
+      }
+      femur_angle = alpha1;
+      tibia_angle = alpha2;
+
+      delta[leg][COXA] = coxa_angle;
+      delta[leg][FEMUR] = femur_angle;
+      delta[leg][TIBIA] = tibia_angle;
+   }
 }
 
 int main(int argc, char *argv[])
 {
+   int leg, servo;
+
    Command command;
-   command.pos_x = 4;
+   command.pos_x = 1;
    command.pos_y = 2;
-   command.pos_z = 15;
-   command.rot_x = 6;
-   command.rot_y = 8;
-   command.rot_z = -2;
+   command.pos_z = 3;
+   command.rot_x = -1;
+   command.rot_y = -2;
+   command.rot_z = -30;
 
-   ik(command);
+   ik(command, angle_delta);
 
+   uint32_t pw;
+
+   for (leg = 0; leg < NUM_LEGS; leg++)
+   {
+      printf("Leg %d\n-----\n", leg);
+      for (servo = 0; servo < NUM_SERVOS_PER_LEG; servo++)
+      {
+         switch (leg)
+         {
+            case LEG_1:
+            case LEG_2:
+            case LEG_3:
+               pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
+               break;
+
+            default:  /* Mirror for left legs */
+               pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
+               break;
+         }
+         printf("%d ", pw);
+      }
+      printf("\n");
+   }
+   
    return 0;
 }
