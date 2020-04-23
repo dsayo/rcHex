@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
    command.pos_x = 0;
    command.pos_y = 0;
    command.pos_z = 0;
-   command.rot_x = 8;
+   command.rot_x = 7;
    command.rot_y = 0;
    command.rot_z = 0;
 
@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
                }
                break;
          }
-         printf("%d ", pw);
+         printf("%7f ", angle_delta[leg][servo]);
+         printf("%d \n", pw);
       }
       printf("\n");
    }

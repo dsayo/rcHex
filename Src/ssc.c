@@ -12,11 +12,13 @@ uint8_t buf[MAX_ARG_SZ];
 
 /* SSC channel mapping */
 const uint8_t ssc_channel[NUM_LEGS][NUM_SERVO_PER_LEG] =
-{				      /* Right */
-	{31, 29, 27}, {25, 23, 21}, {19, 17, 16},
-	/* Front		                   Back */
-	{15, 13, 11}, { 9,  7,  5}, { 3,  1,  0}
-				      /* Left */
+{
+	{31, 29, 27}, /* LEG_1: Right front  */
+	{25, 23, 21}, /*     2: Right middle */
+	{19, 17, 16}, /*     3: Right back   */
+	{ 3,  1,  0}, /*     4: Left back    */
+	{ 9,  7,  5}, /*     5: Left middle  */
+	{15, 13, 11}  /*     6:Left front   */
 };
 
 /* Convert integer to split UART decimal numbers in a buffer.

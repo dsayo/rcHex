@@ -9,10 +9,16 @@
 #define CHAN_PITCH 2
 #define CHAN_YAW 3
 #define CHAN_ARM 4
+#define CHAN_MODE 5
 
-#define MAX_CHAN_USED 4
+typedef enum
+{
+   MODE_XY, MODE_RPY
+} Mode;
 
-#define RXDATA_SCALE_MM 32
+#define MAX_CHAN_USED 5
+
+#define RXDATA_SCALE_MM 16
 #define RXDATA_SCALE_DEG 64
 
 #define NUM_LEGS 6
@@ -43,7 +49,7 @@ void arm();
 void disarm();
 void init_stance();
 uint8_t ctrl_delta(RXData *old, RXData *new); /* */
-Command to_command(RXData rxdata);
+Command to_command(RXData rxdata, Mode mode);
 void set_all_angles(float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]);
 
 #endif /* INC_CONTROLS_H_ */

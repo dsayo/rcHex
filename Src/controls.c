@@ -48,16 +48,30 @@ uint8_t ctrl_delta(RXData *old, RXData *new)
    return 0;
 }
 
-Command to_command(RXData rxdata)
+Command to_command(RXData rxdata, Mode mode)
 {
 	Command cmd;
 
 	cmd.pos_x = 0;
 	cmd.pos_y = 0;
-	cmd.pos_z = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_Z]) / RXDATA_SCALE_MM;
-	cmd.rot_x = ((int16_t)rxdata.channels[CHAN_PITCH] - DEFAULT_MID) / RXDATA_SCALE_DEG;
-	cmd.rot_y = ((int16_t)rxdata.channels[CHAN_ROLL] - DEFAULT_MID) / RXDATA_SCALE_DEG;
-	cmd.rot_z = ((int16_t)rxdata.channels[CHAN_YAW] - DEFAULT_MID) / RXDATA_SCALE_DEG;
+   cmd.pos_z = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_Z]) / RXDATA_SCALE_MM;
+	cmd.rot_x = 0;
+	cmd.rot_y = 0;
+   cmd.rot_z = ((int16_t)rxdata.channels[CHAN_YAW] - DEFAULT_MID) / RXDATA_SCALE_DEG;
+
+	switch (mode)
+	{
+	   case MODE_XY:
+	      cmd.pos_x = ((int16_t)rxdata.channels[CHAN_PITCH] - DEFAULT_MID) / RXDATA_SCALE_MM;
+	      cmd.pos_y = ((int16_t)rxdata.channels[CHAN_ROLL] - DEFAULT_MID) / RXDATA_SCALE_MM;
+	      break;
+
+	   case MODE_RPY:
+	      cmd.rot_x = ((int16_t)rxdata.channels[CHAN_PITCH] - DEFAULT_MID) / RXDATA_SCALE_DEG;
+	      cmd.rot_y = ((int16_t)rxdata.channels[CHAN_ROLL] - DEFAULT_MID) / RXDATA_SCALE_DEG;
+
+	      break;
+	}
 
 	return cmd;
 }
@@ -87,9 +101,7 @@ void set_all_angles(float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG])
 				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
 				         break;
 
-				      case LEG_4:
-				      case LEG_5:
-				      case LEG_6:
+				      default:
 				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
 				         break;
 				   }
@@ -104,16 +116,15 @@ void set_all_angles(float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG])
 				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
 				         break;
 
-				      case LEG_4:
-				      case LEG_5:
-				      case LEG_6:
+				      default:
 				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
 				         break;
 				   }
+				   break;
 
 			}
 
-			servo_move(ssc_channel[leg][servo], pw, NO_SPD, 200);
+			servo_move(ssc_channel[leg][servo], pw, NO_SPD, NO_TIME);
 		}
 	}
 }

@@ -108,12 +108,14 @@ int main(void)
   RXData rx_data;
   float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
   Command cmd;
+  Mode mode = MODE_RPY;
 
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
 
   //init_term(&huart2);
   //init_stance();
+  init_stance();
   /* USER CODE END 2 */
  
  
@@ -125,13 +127,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-/*
-     rx_data.channels[CHAN_Z] = 1100;
-     rx_data.channels[CHAN_PITCH] = 700;
-     rx_data.channels[CHAN_YAW] = 1300;
-     rx_data.channels[CHAN_ROLL] = 300;
-
-     cmd = to_command(rx_data);
+     /*
+     cmd = to_command(rx_data, mode);
      ik(cmd, angle_delta);
      GPIOF->ODR |= GPIO_PIN_0;
      set_all_angles(angle_delta);
@@ -180,13 +177,21 @@ int main(void)
 		  {
 			  GPIOF->ODR |= GPIO_PIN_1;
 			  arm();
-			  init_stance();
 		  }
 		  else
 		  {
 			  GPIOF->ODR &= ~GPIO_PIN_1;
 			  disarm();
            init_stance();
+		  }
+
+		  if (rx_data.channels[CHAN_MODE] > DEFAULT_MID)
+		  {
+		     mode = MODE_XY;
+		  }
+		  else
+		  {
+		     mode = MODE_RPY;
 		  }
 
 		  /* Check deltas */
@@ -205,11 +210,11 @@ int main(void)
 		  }
 	  }
 
-	  if (armed && delta)
+	  if (armed)
 	  {
         delta = 0;
 
-	     cmd = to_command(rx_data);
+	     cmd = to_command(rx_data, mode);
 	     ik(cmd, angle_delta);
 	     set_all_angles(angle_delta);
 	     ssc_cmd_cr();

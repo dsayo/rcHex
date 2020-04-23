@@ -52,11 +52,11 @@ void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
       total_y = INIT_POS_Y[leg] + OFFSET_Y[leg] + command.pos_y;
       dist_body_foot = sqrtf(total_x * total_x + total_y * total_y);
       theta = atan2f(total_y, total_x);
-      roll_z = tanf(command.rot_y * PI / 180) * total_x;
-      pitch_z = tanf(command.rot_x * PI / 180) * total_y;
-      body_ikx = cosf(theta + (command.rot_z * PI / 180)) * 
+      roll_z = tanf(command.rot_y * PI / 180.0f) * total_x;
+      pitch_z = tanf(command.rot_x * PI / 180.0f) * total_y;
+      body_ikx = cosf(theta + (command.rot_z * PI / 180.0f)) *
          dist_body_foot - total_x;
-      body_iky = sinf(theta + (command.rot_z * PI / 180)) *
+      body_iky = sinf(theta + (command.rot_z * PI / 180.0f)) *
          dist_body_foot - total_y;
       body_ikz = roll_z + pitch_z;
 
