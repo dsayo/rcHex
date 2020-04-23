@@ -28,6 +28,7 @@
 #include "ssc.h"
 #include "term.h"
 #include "controls.h"
+#include "ik.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,6 +107,7 @@ int main(void)
   RXData old_rx_data;
   RXData rx_data;
   float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
+  Command cmd;
 
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
@@ -123,6 +125,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+/*
+     rx_data.channels[CHAN_Z] = 1100;
+     rx_data.channels[CHAN_PITCH] = 700;
+     rx_data.channels[CHAN_YAW] = 1300;
+     rx_data.channels[CHAN_ROLL] = 300;
+
+     cmd = to_command(rx_data);
+     ik(cmd, angle_delta);
+     GPIOF->ODR |= GPIO_PIN_0;
+     set_all_angles(angle_delta);
+     ssc_cmd_cr();
+     GPIOF->ODR &= ~GPIO_PIN_0;
+
+     //HAL_Delay(500);
+     continue;
+*/
+
 	  if (HAL_UART_GetError(&huart1))
 	  {
 		  /* Overrun error, flush and restart */
@@ -157,15 +176,17 @@ int main(void)
 		  }
 		  */
 
-		  if (rx_data.channels[CH_ARM] > DEFAULT_MID)
+		  if (rx_data.channels[CHAN_ARM] > DEFAULT_MID)
 		  {
 			  GPIOF->ODR |= GPIO_PIN_1;
 			  arm();
+			  init_stance();
 		  }
 		  else
 		  {
 			  GPIOF->ODR &= ~GPIO_PIN_1;
 			  disarm();
+           init_stance();
 		  }
 
 		  /* Check deltas */
@@ -186,8 +207,14 @@ int main(void)
 
 	  if (armed && delta)
 	  {
-		  delta = 0;
+        delta = 0;
+
+	     cmd = to_command(rx_data);
+	     ik(cmd, angle_delta);
+	     set_all_angles(angle_delta);
+	     ssc_cmd_cr();
 	  }
+
   }
   /* USER CODE END 3 */
 }

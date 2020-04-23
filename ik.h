@@ -6,6 +6,7 @@
 #define CENTER_PW 1500
 #define MIN_PW 1000
 #define CL(x)  (((x) > (MAX_PW)) ? (MAX_PW) : (((x) < (MIN_PW)) ? (MIN_PW) : (x)))
+#define T_CL(x)  (((x) > (1.0f)) ? (1.0f) : (((x) < (-1.0f)) ? (-1.0f) : (x)))
 
 #define NUM_LEGS 6
 #define NUM_SERVOS_PER_LEG 3

@@ -21,10 +21,12 @@
 
 #define MAX_ARG_SZ 5
 #define NO_ARG 0
+#define NO_SPD 0
+#define NO_TIME 0
 
 extern const uint8_t ssc_channel[NUM_LEGS][NUM_SERVO_PER_LEG];
 
-void servo_move(uint8_t channel, int16_t angle, uint16_t speed);
+void servo_move(uint8_t channel, uint16_t pulse_width, uint16_t speed, uint16_t time);
 void ssc_cmd_ch(uint8_t channel);
 void ssc_cmd_pw(uint16_t pulse_width);
 void ssc_cmd_spd(uint16_t speed);

@@ -5,7 +5,6 @@
  *      Author: dsayo
  */
 #include "ssc.h"
-#include "main.h"
 
 extern UART_HandleTypeDef huart2;
 
@@ -13,17 +12,17 @@ uint8_t buf[MAX_ARG_SZ];
 
 /* SSC channel mapping */
 const uint8_t ssc_channel[NUM_LEGS][NUM_SERVO_PER_LEG] =
-{	               /* Right */
+{				      /* Right */
 	{31, 29, 27}, {25, 23, 21}, {19, 17, 16},
 	/* Front		                   Back */
 	{15, 13, 11}, { 9,  7,  5}, { 3,  1,  0}
-	               /* Left  */
+				      /* Left */
 };
 
 /* Convert integer to split UART decimal numbers in a buffer.
  * Returns number of characters to read in buffer.
  */
-uint8_t itoa(uint8_t buf[MAX_ARG_SZ], uint16_t num)
+uint8_t _itoa(uint8_t buf[MAX_ARG_SZ], uint16_t num)
 {
 	int8_t i, j;
 	uint16_t n = num;
@@ -62,17 +61,17 @@ uint8_t itoa(uint8_t buf[MAX_ARG_SZ], uint16_t num)
 }
 
 /* Send command to move a servo */
-void servo_move(uint8_t channel, int16_t angle, uint16_t speed)
+void servo_move(uint8_t channel, uint16_t pulse_width, uint16_t speed, uint16_t time)
 {
-	uint16_t pulse_width;
-
-	pulse_width = CL(CENTER_PW + angle * PW_PER_DEGREE);
-
-	ssc_cmd_ch(channel);
+   ssc_cmd_ch(channel);
 	ssc_cmd_pw(pulse_width);
 	if (speed)
 	{
 		ssc_cmd_spd(speed);
+	}
+	if (time)
+	{
+	   ssc_cmd_time(time);
 	}
 }
 
@@ -85,7 +84,7 @@ void ssc_cmd_ch(uint8_t channel)
 	uint8_t hdr = '#';
 	uint8_t cnt;
 
-	cnt = itoa(buf, (uint16_t)channel);
+	cnt = _itoa(buf, (uint16_t)channel);
 
 	HAL_UART_Transmit(&huart2, &hdr, 1, 10);
 	HAL_UART_Transmit(&huart2, buf, cnt, 10);
@@ -100,7 +99,7 @@ void ssc_cmd_pw(uint16_t pulse_width)
 	uint8_t hdr = 'P';
 	uint8_t cnt;
 
-	cnt = itoa(buf, pulse_width);
+	cnt = _itoa(buf, pulse_width);
 
 	HAL_UART_Transmit(&huart2, &hdr, 1, 10);
 	HAL_UART_Transmit(&huart2, buf, cnt, 10);
@@ -120,7 +119,7 @@ void ssc_cmd_spd(uint16_t speed)
 	uint8_t hdr = 'S';
 	uint8_t cnt;
 
-	cnt = itoa(buf, speed);
+	cnt = _itoa(buf, speed);
 
 	HAL_UART_Transmit(&huart2, &hdr, 1, 10);
 	HAL_UART_Transmit(&huart2, buf, cnt, 10);
@@ -136,7 +135,7 @@ void ssc_cmd_time(uint16_t time)
 	uint8_t hdr = 'T';
 	uint8_t cnt;
 
-	cnt = itoa(buf, time);
+	cnt = _itoa(buf, time);
 
 	HAL_UART_Transmit(&huart2, &hdr, 1, 10);
 	HAL_UART_Transmit(&huart2, buf, cnt, 10);

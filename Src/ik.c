@@ -1,9 +1,17 @@
-#include <stdio.h>
-#include <stdint.h>
 #include <math.h>
 #include "ik.h"
 
-float angle_delta[NUM_LEGS][NUM_SERVOS_PER_LEG];
+const float OFFSET_X[NUM_LEGS] =
+   {42.5f, 62.5f, 42.5f, -42.5f, -62.5f, -42.5f};
+const float OFFSET_Y[NUM_LEGS] =
+   {82.614f, 0.0f, -82.614f, -82.614f, 0.0f, 82.614f};
+
+const float INIT_POS_X[NUM_LEGS] =
+   {72.125f, 102.0f, 72.125f, -72.125f, -102.0f, -72.125f};
+const float INIT_POS_Y[NUM_LEGS] =
+   {72.125f, 0, -72.125f, -72.125f, 0, 72.125f};
+const float INIT_POS_Z[NUM_LEGS] =
+   {107.0f, 107.0f, 107.0f, 107.0f, 107.0f, 107.0f};
 
 void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
 {
@@ -58,16 +66,16 @@ void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
       new_pos_z = INIT_POS_Z[leg] + command.pos_z + body_ikz;
       l = sqrtf(new_pos_x * new_pos_x + new_pos_y * new_pos_y);
       hf = sqrtf((l - COXA_LEN) * (l - COXA_LEN) + new_pos_z * new_pos_z);
-      a1 = atan2f(l - COXA_LEN, new_pos_z) * 180 / PI;
+      a1 = atan2f(l - COXA_LEN, new_pos_z) * 180.0f / PI;
       a2_arg = T_CL((FEMUR_LEN * FEMUR_LEN + hf * hf - TIBIA_LEN * TIBIA_LEN) /
             (2 * FEMUR_LEN * hf));
-      a2 = acosf(a2_arg) * 180 / PI;
-      b1_arg = T_CL((FEMUR_LEN * FEMUR_LEN + TIBIA_LEN * TIBIA_LEN - hf * hf) / 
+      a2 = acosf(a2_arg) * 180.0f / PI;
+      b1_arg = T_CL((FEMUR_LEN * FEMUR_LEN + TIBIA_LEN * TIBIA_LEN - hf * hf) /
             (2 * FEMUR_LEN * TIBIA_LEN));
-      b1 = acosf(b1_arg) * 180 / PI;
+      b1 = acosf(b1_arg) * 180.0f / PI;
       alpha1 = 90 - (a1 + a2);
       alpha2 = 90 - b1;
-      gamma = atan2f(new_pos_y, new_pos_x) * 180 / PI;
+      gamma = atan2f(new_pos_y, new_pos_x) * 180.0f / PI;
 
       switch (leg)
       {
@@ -97,69 +105,4 @@ void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
       delta[leg][FEMUR] = femur_angle;
       delta[leg][TIBIA] = tibia_angle;
    }
-}
-
-int main(int argc, char *argv[])
-{
-   int leg, servo;
-
-   Command command;
-   command.pos_x = 0;
-   command.pos_y = 0;
-   command.pos_z = 0;
-   command.rot_x = 8;
-   command.rot_y = 0;
-   command.rot_z = 0;
-
-   ik(command, angle_delta);
-
-   uint32_t pw;
-
-   for (leg = 0; leg < NUM_LEGS; leg++)
-   {
-      printf("Leg %d\n-----\n", leg+1);
-      for (servo = 0; servo < NUM_SERVOS_PER_LEG; servo++)
-      {
-         switch (servo)
-         {
-            case COXA:
-               pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-               break;
-
-            case FEMUR:
-               switch(leg)
-               {
-                  case LEG_1:
-                  case LEG_2:
-                  case LEG_3:
-                     pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-                     break;
-
-                  default:  /* Mirror for left legs */
-                     pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
-                     break;
-               }
-               break;
-
-            case TIBIA:
-               switch(leg)
-               {
-                  case LEG_1:
-                  case LEG_2:
-                  case LEG_3:
-                     pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
-                     break;
-
-                  default:  /* Mirror for left legs */
-                     pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-                     break;
-               }
-               break;
-         }
-         printf("%d ", pw);
-      }
-      printf("\n");
-   }
-
-   return 0;
 }
