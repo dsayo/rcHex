@@ -13,7 +13,7 @@
 
 typedef enum
 {
-   MODE_XY, MODE_RPY
+   MODE_XY, MODE_CRAWL, MODE_RPY
 } Mode;
 
 #define MAX_CHAN_USED 5

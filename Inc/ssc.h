@@ -18,6 +18,7 @@
 
 /* Max/min limiting function */
 #define CL(x)  (((x) > (MAX_PW)) ? (MAX_PW) : (((x) < (MIN_PW)) ? (MIN_PW) : (x)))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define MAX_ARG_SZ 5
 #define NO_ARG 0

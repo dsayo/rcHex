@@ -8,7 +8,7 @@
 #include "ssc.h"
 #include "sbus.h"
 
-uint8_t armed = 0;
+extern uint8_t armed = 0;
 
 void arm()
 {
