@@ -24,6 +24,6 @@ typedef struct coord
    int16_t z;
 } Coordinates;
 
-void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG]);
+void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG]);
 
 #endif /* IK_H */

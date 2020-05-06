@@ -57,8 +57,13 @@ DMA_HandleTypeDef hdma_usart1_rx;
 volatile uint8_t ready = 0;
 volatile uint8_t delta = 0;
 uint16_t speed;
-uint8_t armed;
+uint8_t armed = 0;
 Mode mode;
+CrawlMode cmod;
+Phase phase;
+Phase max_phase;
+volatile uint8_t phase_ready = 0;
+float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -112,22 +117,19 @@ int main(void)
   uint8_t packet[PACKET_SZ]; /* SBUS packet data */
   RXData old_rx_data;
   RXData rx_data;
-  float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
   Command cmd;
-
 
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
 
-  //init_term(&huart2);
-  //init_stance();
   init_stance();
   mode = MODE_RPY;
+  cmod = TRIPOD;
+  phase = A1;
+  max_phase = B2;
   /* USER CODE END 2 */
  
- 
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -135,17 +137,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-     /*
-     cmd = to_command(rx_data, mode);
-     ik(cmd, angle_delta);
-     GPIOF->ODR |= GPIO_PIN_0;
-     set_all_angles(angle_delta);
-     ssc_cmd_cr();
-     GPIOF->ODR &= ~GPIO_PIN_0;
 
-     //HAL_Delay(500);
-     continue;
-*/
 
 	  if (HAL_UART_GetError(&huart1))
 	  {
@@ -161,66 +153,25 @@ int main(void)
 		  ready = 0;
 		  memcpy(&old_rx_data, &rx_data, sizeof(RXData));
 		  sbus_format(packet, &rx_data);
-		  //print_channels(rx_data);
-		  /* LEDS
-		  if (rx_data.channels[4] > DEFAULT_MID)
-		  {
-			  GPIOF->ODR |= GPIO_PIN_1;
-		  }
-		  else
-		  {
-			  GPIOF->ODR &= ~GPIO_PIN_1;
-		  }
-		  if (rx_data.channels[0] > DEFAULT_MID)
-		  {
-			  GPIOF->ODR |= GPIO_PIN_0;
-		  }
-		  else
-		  {
-			  GPIOF->ODR &= ~GPIO_PIN_0;
-		  }
-		  */
 
-		  if (rx_data.channels[CHAN_ARM] > DEFAULT_MID)
+		  /* Get armed switch */
+		  armed = get_arm(rx_data);
+		  if (!armed)
 		  {
-			  GPIOF->ODR |= GPIO_PIN_1;
-			  arm();
-		  }
-		  else
-		  {
-			  GPIOF->ODR &= ~GPIO_PIN_1;
-			  disarm();
-           init_stance();
+		     init_stance();
 		  }
 
-		  if (rx_data.channels[CHAN_MODE] > DEFAULT_MID)
-		  {
-		     mode = MODE_XY;
-		  }
-		  else if (rx_data.channels[CHAN_MODE] == DEFAULT_MID)
-		  {
-		     mode = MODE_CRAWL;
-		  }
-		  else
-		  {
-		     mode = MODE_RPY;
-		  }
+		  /* Get mode */
+		  mode = get_mode(rx_data);
+
+		  /* Get crawl mode */
+		  cmod = get_cmod(rx_data);
 
 		  /* Check deltas */
 		  if (armed)
 		  {
 			  delta = ctrl_delta(&old_rx_data, &rx_data);
-
-			  if (mode == MODE_CRAWL)
-			  {
-		        /* Calculate speed */
-			     speed = 64 * MAX(abs(rx_data.channels[CHAN_PITCH] - DEFAULT_MID),
-			                      abs(rx_data.channels[CHAN_ROLL] - DEFAULT_MID));
-			  }
-			  else
-			  {
-		        speed = 0;
-			  }
+			  speed = get_speed(rx_data, mode);
 		  }
 		  else
 		  {
@@ -228,14 +179,25 @@ int main(void)
 		  }
 	  }
 
-	  if (armed && delta)
+	  if (armed)
 	  {
-        delta = 0;
-
-	     cmd = to_command(rx_data, mode);
-	     ik(cmd, angle_delta);
-	     set_all_angles(angle_delta);
-	     ssc_cmd_cr();
+        if (mode == MODE_CRAWL && phase_ready)
+        {
+           exec_phase(phase, cmod);
+           phase_ready = 0;
+        }
+        else
+        {
+           /* Stationary mode */
+           if (delta)
+           {
+              delta = 0;
+              cmd = to_command(rx_data, mode);
+              ik(cmd, ALL_LEGS, angle_delta);
+              set_angles(ALL_LEGS, angle_delta, NO_SPD);
+              ssc_cmd_cr();
+           }
+        }
 	  }
 
   }
@@ -442,9 +404,13 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PF0 PF1 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
@@ -452,6 +418,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

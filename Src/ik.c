@@ -13,7 +13,7 @@ const float INIT_POS_Y[NUM_LEGS] =
 const float INIT_POS_Z[NUM_LEGS] =
    {107.0f, 107.0f, 107.0f, 107.0f, 107.0f, 107.0f};
 
-void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
+void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
 {
    float total_x;
    float total_y;
@@ -47,6 +47,12 @@ void ik(Command command, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
 
    for (leg = 0; leg < NUM_LEGS; leg++)
    {
+      if (!(leg_bitmap & (1 << leg)))
+      {
+         /* Leg not set in bitmap, no change */
+         continue;
+      }
+
       /* Body IK */
       total_x = INIT_POS_X[leg] + OFFSET_X[leg] + command.pos_x;
       total_y = INIT_POS_Y[leg] + OFFSET_Y[leg] + command.pos_y;

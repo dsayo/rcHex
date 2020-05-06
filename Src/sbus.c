@@ -50,6 +50,7 @@ void sbus_format(uint8_t *pkt, RXData *data)
 	data->channels[3] = 0x7FF & (((uint16_t)pkt[SHFT(5)] >> 1) | ((uint16_t)pkt[SHFT(6)] << 7));
 	data->channels[4] = 0x7FF & (((uint16_t)pkt[SHFT(6)] >> 4) | ((uint16_t)pkt[SHFT(7)] << 4));
 	data->channels[5] = 0x7FF & (((uint16_t)pkt[SHFT(7)] >> 7) | ((uint16_t)pkt[SHFT(8)] << 1) | ((uint16_t)pkt[SHFT(9)] << 9));
+	data->channels[6] = 0x7FF & (((uint16_t)pkt[SHFT(9)] >> 2) | ((uint16_t)pkt[SHFT(10)] << 6));
 	/* Add channels here */
 
 	data->failsafe = FAILSAFE & pkt[23];
