@@ -79,7 +79,7 @@ void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVOS_PE
       b1_arg = T_CL((FEMUR_LEN * FEMUR_LEN + TIBIA_LEN * TIBIA_LEN - hf * hf) /
             (2 * FEMUR_LEN * TIBIA_LEN));
       b1 = acosf(b1_arg) * 180.0f / PI;
-      alpha1 = 90 - (a1 + a2);
+      alpha1 = (a1 + a2) - 90;
       alpha2 = 90 - b1;
       gamma = atan2f(new_pos_y, new_pos_x) * 180.0f / PI;
 

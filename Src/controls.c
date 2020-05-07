@@ -109,7 +109,7 @@ Command to_command(RXData rxdata, Mode mode)
 
 	cmd.pos_x = 0;
 	cmd.pos_y = 0;
-   cmd.pos_z = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_Z]) / RXDATA_SCALAR_MM;
+   cmd.pos_z = ((int16_t)rxdata.channels[CHAN_Z] - DEFAULT_MID) / RXDATA_SCALAR_MM;
 	cmd.rot_x = 0;
 	cmd.rot_y = 0;
    cmd.rot_z = ((int16_t)rxdata.channels[CHAN_YAW] - DEFAULT_MID) / RXDATA_SCALAR_DEG;
@@ -122,8 +122,8 @@ Command to_command(RXData rxdata, Mode mode)
 	      break;
 
 	   case MODE_RPY:
-	      cmd.rot_x = ((int16_t)rxdata.channels[CHAN_PITCH] - DEFAULT_MID) / RXDATA_SCALAR_DEG;
-	      cmd.rot_y = ((int16_t)rxdata.channels[CHAN_ROLL] - DEFAULT_MID) / RXDATA_SCALAR_DEG;
+	      cmd.rot_x = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_PITCH]) / RXDATA_SCALAR_DEG;
+	      cmd.rot_y = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_ROLL]) / RXDATA_SCALAR_DEG;
 
 	      break;
 
@@ -157,7 +157,8 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 					pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
 					break;
 
-				case FEMUR:  /* Mirror left leg femur servos */
+				case FEMUR:  /* Mirror left leg femur/tibia servos */
+				case TIBIA:
 				   switch(leg)
 				   {
 				      case LEG_1:
@@ -172,26 +173,96 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 				   }
 				   break;
 
-            case TIBIA:
-				   switch(leg)
-				   {
-				      case LEG_1:
-				      case LEG_2:
-				      case LEG_3:
-				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
-				         break;
-
-				      default:
-				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-				         break;
-				   }
-				   break;
+//            case TIBIA: /* Only mirror in rot mode BUG: rot and pos contribute in opposite directions to tibia*/
+//				   switch(leg)
+//				   {
+//				      case LEG_1:
+//				      case LEG_2:
+//				      case LEG_3:
+//				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
+//				         break;
+//
+//				      default:
+//				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
+//				         break;
+//				   }
+//				   break;
 
 			}
 
 			servo_move(ssc_channel[leg][servo], pw, speed, NO_TIME);
 		}
 	}
+}
+
+/* Tripod phase
+ */
+void tripod_phase(Phase phase)
+{
+   uint8_t leg_group_1 = L2 | L4 | L6;
+   uint8_t leg_group_2 = L1 | L3 | L5;
+   Command cmd_1 = {
+         .rot_x = 0,
+         .rot_y = 0,
+         .rot_z = 0
+   };
+   Command cmd_2  = {
+         .rot_x = 0,
+         .rot_y = 0,
+         .rot_z = 0
+   };
+
+   /* Form commands */
+   switch (phase)
+   {
+      case A1:
+      case B1:
+         cmd_1.pos_x = 0;
+         cmd_1.pos_y = 0;
+         cmd_1.pos_z = 0;
+
+         cmd_2.pos_x = 0;
+         cmd_2.pos_y = 0;
+         cmd_2.pos_z = -30;
+         break;
+
+      case A2:
+      case B2:
+         cmd_1.pos_x = 0;
+         cmd_1.pos_y = -50;
+         cmd_1.pos_z = 0;
+
+         cmd_2.pos_x = 0;
+         cmd_2.pos_y = 50;
+         cmd_2.pos_z = 0;
+         break;
+
+      default:
+         break;
+   }
+
+   switch(phase)
+   {
+      /* Phase A: cmd_1/2 to leg_group_1/2 */
+      case A1:
+      case A2:
+         ik(cmd_1, leg_group_1, angle_delta);
+         ik(cmd_2, leg_group_2, angle_delta);
+         set_angles(ALL_LEGS, angle_delta, 1000);
+         break;
+
+      case B1:
+      case B2:
+         ik(cmd_1, leg_group_2, angle_delta);
+         ik(cmd_2, leg_group_1, angle_delta);
+         set_angles(ALL_LEGS, angle_delta, 1000);
+         break;
+
+      default:
+         break;
+   }
+
+   ssc_cmd_cr();
 }
 
 void exec_phase(Phase phase, CrawlMode cmod)
@@ -250,68 +321,4 @@ void exec_phase(Phase phase, CrawlMode cmod)
       default:
          break;
    }
-}
-
-/* Tripod phase
- */
-void tripod_phase(phase)
-{
-   uint8_t leg_group_1 = L2 | L4 | L6;
-   uint8_t leg_group_2 = L1 | L3 | L5;
-   Command cmd_1 = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
-   };
-   Command cmd_2  = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
-   };
-
-   /* Form commands */
-   switch (phase)
-   {
-      case A1:
-      case B1:
-         cmd_1.pos_x = 0;
-         cmd_1.pos_y = 0;
-         cmd_1.pos_z = 0;
-
-         cmd_2.pos_x = 0;
-         cmd_2.pos_y = 0;
-         cmd_2.pos_z = -30;
-         break;
-
-      case A2:
-      case B2:
-         cmd_1.pos_x = 0;
-         cmd_1.pos_y = -50;
-         cmd_1.pos_z = 0;
-
-         cmd_2.pos_x = 0;
-         cmd_2.pos_y = 50;
-         cmd_2.pos_z = 0;
-         break;
-   }
-
-   switch(phase)
-   {
-      /* Phase A: cmd_1/2 to leg_group_1/2 */
-      case A1:
-      case A2:
-         ik(cmd_1, leg_group_1, angle_delta);
-         ik(cmd_2, leg_group_2, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, 1000);
-         break;
-
-      case B1:
-      case B2:
-         ik(cmd_1, leg_group_2, angle_delta);
-         ik(cmd_2, leg_group_1, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, 1000);
-         break;
-   }
-
-   ssc_cmd_cr();
 }
