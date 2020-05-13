@@ -57,6 +57,7 @@ DMA_HandleTypeDef hdma_usart1_rx;
 volatile uint8_t ready = 0;
 volatile uint8_t delta = 0;
 uint16_t seq_speed;
+float crawl_angle;
 uint8_t armed = 0;
 Mode mode;
 CrawlMode cmod;
@@ -127,7 +128,6 @@ int main(void)
   mode = MODE_RPY;
   cmod = TRIPOD;
   phase = A1;
-  max_phase = B3;
   /* USER CODE END 2 */
  
  
@@ -148,10 +148,12 @@ int main(void)
 		  HAL_UART_Receive_DMA(&huart1, packet, 25);
 	  }
 
-	  if(ready)
+     /* Parse control data when ready */
+	  if (ready)
 	  {
-		  /* Parse control data when ready */
 		  ready = 0;
+
+		  /* Save prev rx_data and get new rx_data*/
 		  memcpy(&old_rx_data, &rx_data, sizeof(RXData));
 		  sbus_format(packet, &rx_data);
 
@@ -161,29 +163,39 @@ int main(void)
 		  /* Get mode */
 		  mode = get_mode(rx_data);
 
-		  /* Get crawl mode */
-		  cmod = get_cmod(rx_data);
-
-		  /* Check deltas */
 		  if (armed)
 		  {
-			  delta = ctrl_delta(&old_rx_data, &rx_data);
-			  seq_speed = get_speed(rx_data, mode);
-		  }
-		  else
-		  {
-		     seq_speed = 0;
+		      if (mode == MODE_CRAWL)
+		      {
+		         /* Get crawl mode, sequence speed, and angle */
+		         cmod = get_cmod(rx_data);
+		         seq_speed = get_speed(rx_data);
+		         crawl_angle = get_angle(rx_data);
+
+		      }
+		      else
+		      {
+		         /* Check deltas (if ctrls changed) */
+	            delta = ctrl_delta(&old_rx_data, &rx_data);
+	            seq_speed = 0;
+		      }
 		  }
 	  }
 
+	  /* Move if armed */
 	  if (armed)
 	  {
         if (mode == MODE_CRAWL)
         {
            if (phase_ready)
            {
-              exec_phase(phase, cmod, seq_speed);
               phase_ready = 0;
+              exec_phase(phase, cmod, seq_speed, crawl_angle);
+              phase++;
+              if (phase > max_phase)
+              {
+                 phase = A1;
+              }
            }
         }
         else
@@ -265,7 +277,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 122;
+  htim3.Init.Prescaler = 92;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 0xFFFF;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

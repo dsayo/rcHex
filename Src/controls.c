@@ -4,10 +4,12 @@
  *  Created on: Feb 11, 2020
  *      Author: dsayo
  */
+#include <math.h>
 #include "controls.h"
 #include "ssc.h"
 #include "sbus.h"
 #include "ik.h"
+#include "gait.h"
 
 extern Phase max_phase;
 extern float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG];
@@ -41,11 +43,11 @@ Mode get_mode(RXData rx_data)
 {
    if (rx_data.channels[CHAN_MODE] > DEFAULT_MID)
    {
-      return MODE_XY;
+      return MODE_CRAWL;
    }
    else if (rx_data.channels[CHAN_MODE] == DEFAULT_MID)
    {
-      return MODE_CRAWL;
+      return MODE_XY;
    }
    else
    {
@@ -57,33 +59,33 @@ CrawlMode get_cmod(RXData rx_data)
 {
    if (rx_data.channels[CHAN_CMOD] > DEFAULT_MID)
    {
-      max_phase = F2;
-      return CMOD_6;
+      max_phase = F3;
+      return WAVE;
    }
    else if (rx_data.channels[CHAN_CMOD] == DEFAULT_MID)
    {
-      max_phase = C2;
-      return CMOD_3;
+      max_phase = F3;
+      return RIPPLE;
    }
    else
    {
-      max_phase = B2;
+      max_phase = B3;
       return TRIPOD;
    }
 }
 
-uint16_t get_speed(RXData rx_data, Mode mode)
+uint16_t get_speed(RXData rx_data)
 {
-   if (mode == MODE_CRAWL)
-   {
-      /* Calculate speed */
-      return SPEED_SCALAR * MAX(abs(rx_data.channels[CHAN_PITCH] - DEFAULT_MID),
-            abs(rx_data.channels[CHAN_ROLL] - DEFAULT_MID));
-   }
-   else
-   {
-      return 0;
-   }
+   /* Calculate speed */
+   return SPEED_SCALAR * MAX(abs(rx_data.channels[CHAN_PITCH] - DEFAULT_MID),
+         abs(rx_data.channels[CHAN_ROLL] - DEFAULT_MID));
+
+}
+
+float get_angle(RXData rx_data)
+{
+   return atan2f(rx_data.channels[CHAN_PITCH] - DEFAULT_MID,
+                 rx_data.channels[CHAN_ROLL] - DEFAULT_MID);
 }
 
 /* Compares changes in control data to a threshold.
@@ -172,22 +174,6 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 				         break;
 				   }
 				   break;
-
-//            case TIBIA: /* Only mirror in rot mode BUG: rot and pos contribute in opposite directions to tibia*/
-//				   switch(leg)
-//				   {
-//				      case LEG_1:
-//				      case LEG_2:
-//				      case LEG_3:
-//				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
-//				         break;
-//
-//				      default:
-//				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-//				         break;
-//				   }
-//				   break;
-
 			}
 
 			servo_move(ssc_channel[leg][servo], pw, speed, NO_TIME);
@@ -195,99 +181,12 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 	}
 }
 
-/* Tripod phase
- */
-void tripod_phase(Phase phase, uint16_t servo_speed)
-{
-   uint8_t leg_group_1 = L2 | L4 | L6;
-   uint8_t leg_group_2 = L1 | L3 | L5;
-
-   /* Mirrored commands for each subgroup */
-   Command cmd_1 = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
-   };
-   Command cmd_2  = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
-   };
-
-   /* Form commands */
-   switch (phase)
-   {
-      case A1:
-      case B1:
-         cmd_1.pos_x = 0;
-         cmd_1.pos_y = 10;
-         cmd_1.pos_z = LEG_GROUND;
-
-         cmd_2.pos_x = 0;
-         cmd_2.pos_y = -30;
-         cmd_2.pos_z = LEG_RAISED;
-         break;
-
-      case A2:
-      case B2:
-         cmd_1.pos_x = 0;
-         cmd_1.pos_y = -10;
-         cmd_1.pos_z = LEG_GROUND;
-
-         cmd_2.pos_x = 0;
-         cmd_2.pos_y = 30;
-         cmd_2.pos_z = LEG_RAISED;
-         break;
-
-      case A3:
-      case B3:
-         cmd_1.pos_x = 0;
-         cmd_1.pos_y = -30;
-         cmd_1.pos_z = LEG_GROUND;
-
-         cmd_2.pos_x = 0;
-         cmd_2.pos_y = 30;
-         cmd_2.pos_z = LEG_GROUND;
-         break;
-
-      default:
-         break;
-   }
-
-   /* Issue commands */
-   switch(phase)
-   {
-      /* Phase A: 1st half cycle */
-      case A1:
-      case A2:
-      case A3:
-         ik(cmd_1, leg_group_1, angle_delta);
-         ik(cmd_2, leg_group_2, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, servo_speed);
-         break;
-
-      /* Phase B: Switch commands, complete 2nd half cycle */
-      case B1:
-      case B2:
-      case B3:
-         ik(cmd_1, leg_group_2, angle_delta);
-         ik(cmd_2, leg_group_1, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, servo_speed);
-         break;
-
-      default:
-         break;
-   }
-
-   ssc_cmd_cr();
-}
-
 uint16_t to_servo_speed(uint16_t seq_speed)
 {
-   return (seq_speed >> 6) + 500;
+   return 3 * (seq_speed >> 6) / 2 + 200;
 }
 
-void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed)
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle)
 {
    uint16_t servo_speed;
 
@@ -340,6 +239,9 @@ void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed)
          GPIOB->ODR |= GPIO_PIN_4;
          GPIOF->ODR |= GPIO_PIN_0;
          break;
+
+      default:
+         return;
    }
 
    servo_speed = to_servo_speed(seq_speed);
@@ -347,10 +249,19 @@ void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed)
    switch (cmod)
    {
       case TRIPOD:
-         tripod_phase(phase, servo_speed);
+         tripod_phase(phase, servo_speed, crawl_angle);
+         break;
+
+      case RIPPLE:
+         ripple_phase(phase, servo_speed, crawl_angle);
+         break;
+
+      case WAVE:
          break;
 
       default:
          break;
    }
 }
+
+

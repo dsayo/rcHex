@@ -49,7 +49,7 @@ typedef enum
 
 typedef enum
 {
-   TRIPOD, CMOD_3, CMOD_6
+   TRIPOD, RIPPLE, WAVE
 } CrawlMode;
 
 typedef enum
@@ -62,8 +62,6 @@ typedef enum
    F1, F2, F3
 } Phase;
 
-#define LEG_RAISED -40
-#define LEG_GROUND 0
 
 #define RXDATA_SCALAR_MM 16
 #define RXDATA_SCALAR_DEG 64
@@ -83,11 +81,12 @@ void init_stance();
 uint8_t get_arm(RXData rx_data);
 Mode get_mode(RXData rx_data);
 CrawlMode get_cmod(RXData rx_data);
-uint16_t get_speed(RXData rx_data, Mode mode);
+uint16_t get_speed(RXData rx_data);
+float get_angle(RXData rx_data);
 uint8_t ctrl_delta(RXData *old, RXData *new);
 Command to_command(RXData rxdata, Mode mode);
 void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG],
       uint16_t speed);
-void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed);
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle);
 
 #endif /* INC_CONTROLS_H_ */
