@@ -197,10 +197,12 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 
 /* Tripod phase
  */
-void tripod_phase(Phase phase)
+void tripod_phase(Phase phase, uint16_t servo_speed)
 {
    uint8_t leg_group_1 = L2 | L4 | L6;
    uint8_t leg_group_2 = L1 | L3 | L5;
+
+   /* Mirrored commands for each subgroup */
    Command cmd_1 = {
          .rot_x = 0,
          .rot_y = 0,
@@ -218,44 +220,59 @@ void tripod_phase(Phase phase)
       case A1:
       case B1:
          cmd_1.pos_x = 0;
-         cmd_1.pos_y = 0;
-         cmd_1.pos_z = 0;
+         cmd_1.pos_y = 10;
+         cmd_1.pos_z = LEG_GROUND;
 
          cmd_2.pos_x = 0;
-         cmd_2.pos_y = 0;
-         cmd_2.pos_z = -30;
+         cmd_2.pos_y = -30;
+         cmd_2.pos_z = LEG_RAISED;
          break;
 
       case A2:
       case B2:
          cmd_1.pos_x = 0;
-         cmd_1.pos_y = -50;
-         cmd_1.pos_z = 0;
+         cmd_1.pos_y = -10;
+         cmd_1.pos_z = LEG_GROUND;
 
          cmd_2.pos_x = 0;
-         cmd_2.pos_y = 50;
-         cmd_2.pos_z = 0;
+         cmd_2.pos_y = 30;
+         cmd_2.pos_z = LEG_RAISED;
+         break;
+
+      case A3:
+      case B3:
+         cmd_1.pos_x = 0;
+         cmd_1.pos_y = -30;
+         cmd_1.pos_z = LEG_GROUND;
+
+         cmd_2.pos_x = 0;
+         cmd_2.pos_y = 30;
+         cmd_2.pos_z = LEG_GROUND;
          break;
 
       default:
          break;
    }
 
+   /* Issue commands */
    switch(phase)
    {
-      /* Phase A: cmd_1/2 to leg_group_1/2 */
+      /* Phase A: 1st half cycle */
       case A1:
       case A2:
+      case A3:
          ik(cmd_1, leg_group_1, angle_delta);
          ik(cmd_2, leg_group_2, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, 1000);
+         set_angles(ALL_LEGS, angle_delta, servo_speed);
          break;
 
+      /* Phase B: Switch commands, complete 2nd half cycle */
       case B1:
       case B2:
+      case B3:
          ik(cmd_1, leg_group_2, angle_delta);
          ik(cmd_2, leg_group_1, angle_delta);
-         set_angles(ALL_LEGS, angle_delta, 1000);
+         set_angles(ALL_LEGS, angle_delta, servo_speed);
          break;
 
       default:
@@ -265,12 +282,20 @@ void tripod_phase(Phase phase)
    ssc_cmd_cr();
 }
 
-void exec_phase(Phase phase, CrawlMode cmod)
+uint16_t to_servo_speed(uint16_t seq_speed)
 {
+   return (seq_speed >> 6) + 500;
+}
+
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed)
+{
+   uint16_t servo_speed;
+
    switch (phase)
    {
       case A1:
       case A2:
+      case A3:
          GPIOF->ODR |= GPIO_PIN_1;
          GPIOB->ODR &= ~GPIO_PIN_4;
          GPIOF->ODR &= ~GPIO_PIN_0;
@@ -278,6 +303,7 @@ void exec_phase(Phase phase, CrawlMode cmod)
 
       case B1:
       case B2:
+      case B3:
          GPIOF->ODR &= ~GPIO_PIN_1;
          GPIOB->ODR |= GPIO_PIN_4;
          GPIOF->ODR &= ~GPIO_PIN_0;
@@ -285,6 +311,7 @@ void exec_phase(Phase phase, CrawlMode cmod)
 
       case C1:
       case C2:
+      case C3:
          GPIOF->ODR |= GPIO_PIN_1;
          GPIOB->ODR |= GPIO_PIN_4;
          GPIOF->ODR &= ~GPIO_PIN_0;
@@ -292,6 +319,7 @@ void exec_phase(Phase phase, CrawlMode cmod)
 
       case D1:
       case D2:
+      case D3:
          GPIOF->ODR &= ~GPIO_PIN_1;
          GPIOB->ODR &= ~GPIO_PIN_4;
          GPIOF->ODR |= GPIO_PIN_0;
@@ -299,6 +327,7 @@ void exec_phase(Phase phase, CrawlMode cmod)
 
       case E1:
       case E2:
+      case E3:
          GPIOF->ODR |= GPIO_PIN_1;
          GPIOB->ODR &= ~GPIO_PIN_4;
          GPIOF->ODR |= GPIO_PIN_0;
@@ -306,16 +335,19 @@ void exec_phase(Phase phase, CrawlMode cmod)
 
       case F1:
       case F2:
+      case F3:
          GPIOF->ODR &= ~GPIO_PIN_1;
          GPIOB->ODR |= GPIO_PIN_4;
          GPIOF->ODR |= GPIO_PIN_0;
          break;
    }
 
+   servo_speed = to_servo_speed(seq_speed);
+
    switch (cmod)
    {
       case TRIPOD:
-         tripod_phase(phase);
+         tripod_phase(phase, servo_speed);
          break;
 
       default:

@@ -56,7 +56,7 @@ DMA_HandleTypeDef hdma_usart1_rx;
 /* USER CODE BEGIN PV */
 volatile uint8_t ready = 0;
 volatile uint8_t delta = 0;
-uint16_t speed;
+uint16_t seq_speed;
 uint8_t armed = 0;
 Mode mode;
 CrawlMode cmod;
@@ -127,9 +127,11 @@ int main(void)
   mode = MODE_RPY;
   cmod = TRIPOD;
   phase = A1;
-  max_phase = B2;
+  max_phase = B3;
   /* USER CODE END 2 */
  
+ 
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -137,7 +139,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
 
 	  if (HAL_UART_GetError(&huart1))
 	  {
@@ -156,10 +157,6 @@ int main(void)
 
 		  /* Get armed switch */
 		  armed = get_arm(rx_data);
-		  if (!armed)
-		  {
-		     init_stance();
-		  }
 
 		  /* Get mode */
 		  mode = get_mode(rx_data);
@@ -171,20 +168,23 @@ int main(void)
 		  if (armed)
 		  {
 			  delta = ctrl_delta(&old_rx_data, &rx_data);
-			  speed = get_speed(rx_data, mode);
+			  seq_speed = get_speed(rx_data, mode);
 		  }
 		  else
 		  {
-		     speed = 0;
+		     seq_speed = 0;
 		  }
 	  }
 
 	  if (armed)
 	  {
-        if (mode == MODE_CRAWL && phase_ready)
+        if (mode == MODE_CRAWL)
         {
-           exec_phase(phase, cmod);
-           phase_ready = 0;
+           if (phase_ready)
+           {
+              exec_phase(phase, cmod, seq_speed);
+              phase_ready = 0;
+           }
         }
         else
         {

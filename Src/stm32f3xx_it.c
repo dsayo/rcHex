@@ -61,7 +61,7 @@ extern TIM_HandleTypeDef htim3;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 /* USER CODE BEGIN EV */
-extern uint16_t speed;
+extern uint16_t seq_speed;
 extern Phase phase;
 extern Phase max_phase;
 extern uint8_t phase_ready;
@@ -227,18 +227,26 @@ void TIM3_IRQHandler(void)
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
   /* USER CODE BEGIN TIM3_IRQn 1 */
-  if (speed)
+  if (seq_speed)
   {
      /* Go to next sequence step */
-     phase_ready = 1;
-     phase += 1;
-     if (phase > max_phase)
+     if (!phase_ready) /* Don't skip a phase */
      {
-        phase = A1;
+        phase_ready = 1;
+        phase++;
+        if (phase > max_phase)
+        {
+           phase = A1;
+        }
      }
-
+     else
+     {
+        GPIOF->ODR |= GPIO_PIN_1;
+                 GPIOB->ODR |= GPIO_PIN_4;
+                 GPIOF->ODR |= GPIO_PIN_0;
+     }
   }
-  TIM3->CCR1 += (0xFFFF - speed);  /* Change sequence speed */
+  TIM3->CCR1 += (0xFFFF - seq_speed);  /* Change sequence speed */
   /* USER CODE END TIM3_IRQn 1 */
 }
 

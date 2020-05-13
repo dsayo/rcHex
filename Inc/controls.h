@@ -54,8 +54,16 @@ typedef enum
 
 typedef enum
 {
-   A1, A2, B1, B2, C1, C2, D1, D2, E1, E2, F1, F2
+   A1, A2, A3,
+   B1, B2, B3,
+   C1, C2, C3,
+   D1, D2, D3,
+   E1, E2, E3,
+   F1, F2, F3
 } Phase;
+
+#define LEG_RAISED -40
+#define LEG_GROUND 0
 
 #define RXDATA_SCALAR_MM 16
 #define RXDATA_SCALAR_DEG 64
@@ -80,6 +88,6 @@ uint8_t ctrl_delta(RXData *old, RXData *new);
 Command to_command(RXData rxdata, Mode mode);
 void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG],
       uint16_t speed);
-void exec_phase(Phase phase, CrawlMode cmod);
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed);
 
 #endif /* INC_CONTROLS_H_ */
