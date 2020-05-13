@@ -14,14 +14,61 @@
 extern Phase max_phase;
 extern float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG];
 
+/* Powerup stance: Coxa 90 deg, femur 45 deg, tibia 45 deg.
+ * Because SSC ignorees speed commands, this is done first before slowly
+ * transitioning to init stance.
+ */
+void powerup_stance()
+{
+   int leg;
+   int servo;
+   uint32_t pw;
+
+   for (leg = 0; leg < NUM_LEGS; leg++)
+   {
+      for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
+      {
+         switch(servo)
+         {
+            case COXA:
+               pw = CENTER_PW;
+               break;
+
+            case FEMUR:  /* Mirror left leg femur/tibia servos */
+            case TIBIA:
+               switch(leg)
+               {
+                  case LEG_1:
+                  case LEG_2:
+                  case LEG_3:
+                     pw = CENTER_PW + PW_PER_DEGREE * 45;
+                     break;
+
+                  default:
+                     pw = CENTER_PW - PW_PER_DEGREE * 45;
+                     break;
+               }
+               break;
+         }
+         servo_move(ssc_channel[leg][servo], pw, NO_SPD, NO_TIME);
+      }
+   }
+   ssc_cmd_cr();
+}
+
 void init_stance()
 {
-   uint8_t i;
+   int leg;
+   int servo;
 
-   for (i = 0; i < 32; i++)
+   for (leg = 0; leg < NUM_LEGS; leg++)
    {
-      servo_move(i, CENTER_PW, 500, NO_TIME);
+      for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
+      {
+         servo_move(ssc_channel[leg][servo], CENTER_PW, 500, NO_TIME);
+      }
    }
+
    ssc_cmd_cr();
 }
 
@@ -183,7 +230,17 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 
 uint16_t to_servo_speed(uint16_t seq_speed)
 {
-   return 3 * (seq_speed >> 6) / 2 + 200;
+   uint16_t ctrl_val = seq_speed >> 6;
+
+   /* Piecewise function: steeper for higher magnitude */
+   if (ctrl_val < 600)
+   {
+      return 5 * ctrl_val / 4 + 50;
+   }
+   else
+   {
+      return 2 * ctrl_val - 400;
+   }
 }
 
 void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle)

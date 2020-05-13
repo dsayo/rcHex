@@ -10,8 +10,8 @@
 #include "main.h"
 #include "controls.h"
 
-#define TRIPOD_STROKE_LEN 105  /* (mm) */
-#define LEG_RAISED -30 /* (mm) */
+#define TRIPOD_STROKE_LEN 100  /* (mm) */
+#define LEG_RAISED -40 /* (mm) */
 #define LEG_GROUND 0   /* (mm) */
 
 void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle);

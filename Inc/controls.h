@@ -77,6 +77,7 @@ typedef struct command
 	int16_t rot_z;
 } Command;
 
+void powerup_stance();
 void init_stance();
 uint8_t get_arm(RXData rx_data);
 Mode get_mode(RXData rx_data);

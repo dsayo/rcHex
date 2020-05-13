@@ -120,10 +120,13 @@ int main(void)
   RXData rx_data;
   Command cmd;
 
+  HAL_Delay(1000); /* One second startup */
+
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
   HAL_UART_Receive_DMA(&huart1, packet, 25);
 
+  powerup_stance();
   init_stance();
   mode = MODE_RPY;
   cmod = TRIPOD;
@@ -206,7 +209,7 @@ int main(void)
               delta = 0;
               cmd = to_command(rx_data, mode);
               ik(cmd, ALL_LEGS, angle_delta);
-              set_angles(ALL_LEGS, angle_delta, NO_SPD);
+              set_angles(ALL_LEGS, angle_delta, 1500);
               ssc_cmd_cr();
            }
         }
