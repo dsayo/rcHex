@@ -104,19 +104,19 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    {
       case A1:
       case B1:
-         cmd_1 = p_stroke(x_dir, y_dir, 1/3);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)1/3);
          cmd_2 = start_r_stroke(x_dir, y_dir);
          break;
 
       case A2:
       case B2:
-         cmd_1 = p_stroke(x_dir, y_dir, 2/3);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)2/3);
          cmd_2 = mid_r_stroke(x_dir, y_dir);
          break;
 
       case A3:
       case B3:
-         cmd_1 = p_stroke(x_dir, y_dir, 3/3);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)3/3);
          cmd_2 = mid_r_stroke(x_dir, y_dir);
          break;
 
@@ -173,115 +173,115 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
       /* A1, A3, B2: LEG_4 return stroke */
       case A1:
          cmd_1 = start_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 4/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 1/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)4/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)1/6);
          break;
 
       case A3:
          cmd_1 = mid_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 5/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 2/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)5/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)2/6);
          break;
 
       case B2:
          cmd_1 = end_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 6/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 3/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)6/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)3/6);
          break;
 
       /* C1, C3, D2: LEG_5 return stroke */
       case C1:
-         cmd_1 = p_stroke(x_dir, y_dir, 1/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)1/6);
          cmd_2 = start_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 4/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)4/6);
          break;
 
       case C3:
-         cmd_1 = p_stroke(x_dir, y_dir, 2/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)2/6);
          cmd_2 = mid_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 5/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)5/6);
          break;
 
       case D2:
-         cmd_1 = p_stroke(x_dir, y_dir, 3/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)3/6);
          cmd_2 = end_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 6/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)6/6);
          break;
 
       /* E1, E3, F2: LEG_6 return stroke */
       case E1:
-         cmd_1 = p_stroke(x_dir, y_dir, 4/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 1/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)4/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)1/6);
          cmd_3 = start_r_stroke(x_dir, y_dir);
          break;
 
       case E3:
-         cmd_1 = p_stroke(x_dir, y_dir, 5/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 2/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)5/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)2/6);
          cmd_3 = mid_r_stroke(x_dir, y_dir);
          break;
 
       case F2:
-         cmd_1 = p_stroke(x_dir, y_dir, 6/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 3/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)6/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)3/6);
          cmd_3 = end_r_stroke(x_dir, y_dir);
          break;
 
       /* B1, B3, C2: LEG_1 return stroke */
       case B1:
          cmd_1 = start_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 1/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 4/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)1/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)4/6);
          break;
 
       case B3:
          cmd_1 = mid_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 2/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 5/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)2/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)5/6);
          break;
 
       case C2:
          cmd_1 = end_r_stroke(x_dir, y_dir);
-         cmd_2 = p_stroke(x_dir, y_dir, 3/6);
-         cmd_3 = p_stroke(x_dir, y_dir, 6/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)3/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)6/6);
          break;
 
       /* D1, D3, E2: LEG_3 return stroke */
       case D1:
-         cmd_1 = p_stroke(x_dir, y_dir, 1/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 4/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)1/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)4/6);
          cmd_3 = start_r_stroke(x_dir, y_dir);
          break;
 
       case D3:
-         cmd_1 = p_stroke(x_dir, y_dir, 2/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 5/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)2/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)5/6);
          cmd_3 = mid_r_stroke(x_dir, y_dir);
          break;
 
       case E2:
-         cmd_1 = p_stroke(x_dir, y_dir, 3/6);
-         cmd_2 = p_stroke(x_dir, y_dir, 6/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)3/6);
+         cmd_2 = p_stroke(x_dir, y_dir, (float)6/6);
          cmd_3 = end_r_stroke(x_dir, y_dir);
          break;
 
       /* F1, F3, A2: LEG_2 return stroke */
       case F1:
-         cmd_1 = p_stroke(x_dir, y_dir, 4/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)4/6);
          cmd_2 = start_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 1/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)1/6);
          break;
 
       case F3:
-         cmd_1 = p_stroke(x_dir, y_dir, 5/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)5/6);
          cmd_2 = mid_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 2/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)2/6);
          break;
 
       case A2:
-         cmd_1 = p_stroke(x_dir, y_dir, 6/6);
+         cmd_1 = p_stroke(x_dir, y_dir, (float)6/6);
          cmd_2 = end_r_stroke(x_dir, y_dir);
-         cmd_3 = p_stroke(x_dir, y_dir, 3/6);
+         cmd_3 = p_stroke(x_dir, y_dir, (float)3/6);
          break;
 
       default:

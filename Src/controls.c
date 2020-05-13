@@ -20,7 +20,7 @@ void init_stance()
 
    for (i = 0; i < 32; i++)
    {
-      servo_move(i, CENTER_PW, NO_SPD, NO_TIME);
+      servo_move(i, CENTER_PW, 500, NO_TIME);
    }
    ssc_cmd_cr();
 }

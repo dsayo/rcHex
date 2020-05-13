@@ -211,6 +211,10 @@ int main(void)
            }
         }
 	  }
+	  else
+	  {
+	     init_stance();
+	  }
 
   }
   /* USER CODE END 3 */
