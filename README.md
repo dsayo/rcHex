@@ -1,29 +1,16 @@
-STM32F303RE Nucleo template
-===========================
+<p align="center">
+    <img src="bird.gif" alt="bird" title="bird" width=300px>
+</p>
 
-This is a basic GCC template and playground for the STM32F303RE Nucleo
-development board.
+### Senior Design Project: rcHex
 
-Prerequisites
--------------
-You will need to install the following:
-* `arm-none-eabi-gcc`
-* [stlink](https://github.com/texane/stlink)
+**California Polytechnic State University, San Luis Obispo**
 
-Compiling
----------
-Simply run:
+**Spring 2020**
 
-```bash
-make
-```
+[Dominique Sayo](https://github.com/dsayo)
 
-Uploading
----------
-Simply connect your Nucleo board and run:
+Advisor: [Dr. Paul Hummel](https://ee.calpoly.edu/faculty/phummel/)
 
-```bash
-make install
-```
+---
 
-The device's `LD2` LED should start blinking.

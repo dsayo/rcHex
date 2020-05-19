@@ -1,4 +1,0 @@
-
-To test RX on serial terminal:
-$ screen /dev/ttyACM2 115200
-To exit: Ctrl-A and type :quit
