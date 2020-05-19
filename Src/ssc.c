@@ -62,7 +62,9 @@ uint8_t _itoa(uint8_t buf[MAX_ARG_SZ], uint16_t num)
 	return cnt;
 }
 
-/* Send command to move a servo */
+/* Send command to ssc32 buffer to move a servo. Need to call ssc_cmd_cr() to
+ * execute buffered commands.
+ */
 void servo_move(uint8_t channel, uint16_t pulse_width, uint16_t speed, uint16_t time)
 {
    ssc_cmd_ch(channel);
@@ -150,7 +152,7 @@ void ssc_cmd_time(uint16_t time)
  */
 void ssc_cmd_cr()
 {
-	uint8_t cr = 13;
+	uint8_t cr = '\r';
 
 	HAL_UART_Transmit(&huart2, &cr, 1, 10);
 }

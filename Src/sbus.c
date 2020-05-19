@@ -6,8 +6,8 @@
  */
 #include "sbus.h"
 
-uint8_t sync = 0;
-uint8_t si = 0;   /* Sync index */
+uint8_t sync = 0; /* Flag: is incoming data synced yet?        */
+uint8_t si = 0;   /* Sync index: number of first packet caught */
 
 /* Finds the start of the SBUS packet in the buffer received through UART.
  */
@@ -52,7 +52,7 @@ void sbus_format(uint8_t *pkt, RXData *data)
 	data->channels[5] = 0x7FF & (((uint16_t)pkt[SHFT(7)] >> 7) | ((uint16_t)pkt[SHFT(8)] << 1) | ((uint16_t)pkt[SHFT(9)] << 9));
 	data->channels[6] = 0x7FF & (((uint16_t)pkt[SHFT(9)] >> 2) | ((uint16_t)pkt[SHFT(10)] << 6));
 	data->channels[7] = 0x7FF & (((uint16_t)pkt[SHFT(10)] >> 5) | ((uint16_t)pkt[SHFT(11)] << 3));
-	/* Add channels here */
+	/* Add more channels here if needed */
 
 	data->failsafe = FAILSAFE & pkt[23];
 	data->lost_frame = LOST_FRAME & pkt[23];

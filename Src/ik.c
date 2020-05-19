@@ -1,6 +1,7 @@
 #include <math.h>
 #include "ik.h"
 
+/* Measured physical dimensions in mm */
 const float OFFSET_X[NUM_LEGS] =
    {42.5f, 62.5f, 42.5f, -42.5f, -62.5f, -42.5f};
 const float OFFSET_Y[NUM_LEGS] =
@@ -13,7 +14,11 @@ const float INIT_POS_Y[NUM_LEGS] =
 const float INIT_POS_Z[NUM_LEGS] =
    {107.0f, 107.0f, 107.0f, 107.0f, 107.0f, 107.0f};
 
-void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVOS_PER_LEG])
+/* Inverse kinematics calculation! Calculates the needed servo angles given a command
+ * containing (x, y, z) body position and (roll, pitch, yaw) body orientation.
+ * Lots of trigonometry. Leg subgroups are specified using the leg_bitmap argument.
+ */
+void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVO_PER_LEG])
 {
    float total_x;
    float total_y;
@@ -83,6 +88,7 @@ void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVOS_PE
       alpha2 = 90 - b1;
       gamma = atan2f(new_pos_y, new_pos_x) * 180.0f / PI;
 
+      /* Account for the angles the servos are mounted */
       switch (leg)
       {
          case LEG_1:

@@ -1,22 +1,3 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -54,17 +35,11 @@ UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-volatile uint8_t ready = 0;
-volatile uint8_t delta = 0;
-uint16_t seq_speed;
-float crawl_angle;
-uint16_t rot_dir;
-uint8_t armed = 0;
-Mode mode;
-CrawlMode cmod;
-Phase phase;
-Phase max_phase;
-volatile uint8_t phase_ready = 0;
+volatile uint8_t ready = 0;       /* Flag: ready to process RX data    */
+volatile uint8_t delta = 0;       /* Flag: change in RX data           */
+volatile uint8_t phase_ready = 0; /* Flag: ready for next crawl phase  */
+uint16_t seq_speed;               /* CCR subtractor for sequence speed */
+Phase max_phase;                  /* Maximum phase in sequence cycle   */
 float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG]; /* Servo degree changes */
 /* USER CODE END PV */
 
@@ -91,6 +66,16 @@ static void MX_TIM3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+   uint8_t packet[PACKET_SZ]; /* SBUS packet data            */
+   RXData rx_data;            /* Formatted ctrl data         */
+   RXData old_rx_data;        /* Previous ctrl data          */
+   Command cmd;               /* Stationary command          */
+   uint8_t armed = 0;         /* Flag: is armed              */
+   Mode mode = MODE_RPY;      /* Movement mode               */
+   CrawlMode cmod = TRIPOD;   /* Gait type / rotate          */
+   Phase phase = A1;          /* Current phase in sequence   */
+   float crawl_angle;         /* Crawl direction in radians  */
+   uint16_t rot_dir;          /* Rotation direction +CW -CCW */
   /* USER CODE END 1 */
   
 
@@ -116,26 +101,20 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t packet[PACKET_SZ]; /* SBUS packet data */
-  RXData old_rx_data;
-  RXData rx_data;
-  Command cmd;
+
 
   HAL_Delay(1000); /* One second startup */
 
+  /* Start reading incoming RX data over UART */
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
   __HAL_UART_FLUSH_DRREGISTER(&huart1);
-  HAL_UART_Receive_DMA(&huart1, packet, 25);
+  HAL_UART_Receive_DMA(&huart1, packet, PACKET_SZ);
 
-  powerup_stance();
-  init_stance();
-  mode = MODE_RPY;
-  cmod = TRIPOD;
-  phase = A1;
+  powerup_stance(); /* Fast stance on powerup  */
+  neutral_stance();    /* Ease into steady stance */
+
   /* USER CODE END 2 */
  
- 
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -144,6 +123,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+     /* UART Error checking */
 	  if (HAL_UART_GetError(&huart1))
 	  {
 		  /* Overrun error, flush and restart */
@@ -157,14 +137,12 @@ int main(void)
 	  {
 		  ready = 0;
 
-		  /* Save prev rx_data and get new rx_data*/
+		  /* Save prev rx data and get new rx data*/
 		  memcpy(&old_rx_data, &rx_data, sizeof(RXData));
 		  sbus_format(packet, &rx_data);
 
-		  /* Get armed switch */
+		  /* Get armed switch and operating mode */
 		  armed = get_arm(rx_data);
-
-		  /* Get mode */
 		  mode = get_mode(rx_data);
 
 		  if (armed)
@@ -172,7 +150,7 @@ int main(void)
 		      switch (mode)
 		      {
 		         case MODE_CRAWL:
-		            /* Get crawl mode, sequence speed, travel angle, and rotation direction */
+		            /* Get gait type, sequence speed, travel angle, and rotation direction */
 		            cmod = get_cmod(rx_data);
 		            seq_speed = get_speed(rx_data, cmod);
 		            crawl_angle = get_angle(rx_data);
@@ -180,23 +158,26 @@ int main(void)
 		            break;
 
 		         default: /* Stationary modes */
-		            /* Check deltas (if ctrls changed) */
+		            /* Check deltas (if rx data changed) */
 		            delta = ctrl_delta(&old_rx_data, &rx_data);
-		            seq_speed = 0;
+		            seq_speed = 0; /* Don't use sequencer */
 		            break;
 		      }
 		  }
 	  }
 
-	  /* Move if armed */
+	  /* Enable control if armed */
 	  if (armed)
 	  {
         switch (mode)
         {
            case MODE_CRAWL:
+              /* When sequencer signals next phase */
               if (phase_ready)
               {
                  phase_ready = 0;
+
+                 /* Execute phase movement */
                  exec_phase(phase, cmod, seq_speed, crawl_angle, rot_dir);
                  phase++;
                  if (phase > max_phase)
@@ -210,18 +191,22 @@ int main(void)
               /* Stationary mode */
               if (delta)
               {
+                 /* Only run new calculations if rx data changed enough */
                  delta = 0;
+
+                 /* Convert rx data to command & calculate inv. kinematics */
                  cmd = to_command(rx_data, mode);
                  ik(cmd, ALL_LEGS, angle_delta);
-                 set_angles(ALL_LEGS, angle_delta, 1500);
-                 ssc_cmd_cr();
+                 set_angles(ALL_LEGS, angle_delta, STATIONARY_SERVO_SPEED);
+                 ssc_cmd_cr();   /* Send new servo pwm */
               }
               break;
         }
 	  }
 	  else
 	  {
-	     init_stance();
+	     /* Stand still */
+	     neutral_stance();
 	  }
 
   }

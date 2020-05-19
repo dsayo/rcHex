@@ -11,26 +11,27 @@
 #include "main.h"
 #include <stdlib.h>
 
+/* SBUS protocol specs */
 #define START_BYTE 0x0F
 #define END_BYTE   0x00
-#define TIMEOUT_MS 7
 #define PACKET_SZ 25
 #define FAILSAFE   0x08
 #define LOST_FRAME  0x04
-#define DEFAULT_MIN 172
+
+/* Radio-dependent min/mid/max values. */
+#define DEFAULT_MIN 172 /* [Taranis Q X7] */
 #define DEFAULT_MID 992
 #define DEFAULT_MAX 1811
 
 /* Calculates packet index with offset in case of misalignment */
 #define SHFT(i) ((si + i) % PACKET_SZ)
 
+/* Parsed receiver data format */
 typedef struct RXData {
 	uint16_t channels[16];       /* Channel data */
 	uint8_t failsafe;            /* Failsafe     */
 	uint8_t lost_frame;          /* Lost frame   */
 } RXData;
-
-#define DELTA_THRESH 20
 
 void sbus_format(uint8_t *pkt, RXData *data); /* Read a packet, return true if complete, else false */
 

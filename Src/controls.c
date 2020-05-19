@@ -14,15 +14,15 @@
 extern Phase max_phase;
 extern float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG];
 
-/* Powerup stance: Coxa 90 deg, femur 45 deg, tibia 45 deg.
- * Because SSC ignorees speed commands, this is done first before slowly
- * transitioning to init stance.
+/* Powerup stance command: Coxa 0 deg, femur 45 deg, tibia 45 deg
+ * Because SSC ignores speed commands for the very first command,
+ * this is done first before slowly transitioning to the neutral stance.
  */
 void powerup_stance()
 {
    int leg;
    int servo;
-   uint32_t pw;
+   uint32_t pw;  /* Pulse width */
 
    for (leg = 0; leg < NUM_LEGS; leg++)
    {
@@ -56,7 +56,9 @@ void powerup_stance()
    ssc_cmd_cr();
 }
 
-void init_stance()
+/* Neutral stance: all servos at 0 degrees.
+ */
+void neutral_stance()
 {
    int leg;
    int servo;
@@ -65,13 +67,15 @@ void init_stance()
    {
       for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
       {
-         servo_move(ssc_channel[leg][servo], CENTER_PW, 500, NO_TIME);
+         servo_move(ssc_channel[leg][servo], CENTER_PW, NEUTRAL_SERVO_SPEED, NO_TIME);
       }
    }
 
    ssc_cmd_cr();
 }
 
+/* Poll the arm switch and return whether it is on or not.
+ */
 uint8_t get_arm(RXData rx_data)
 {
    if (rx_data.channels[CHAN_ARM] > DEFAULT_MID)
@@ -86,9 +90,14 @@ uint8_t get_arm(RXData rx_data)
    }
 }
 
+/* Poll the rotation and mode switch and return the corresponding mode.
+ * rot HIGH -> Crawl mode
+ * mod HIGH -> Crawl mode
+ * mod MID  -> X-Y control mode
+ * mod LOW  -> Roll-Pitch-Yaw mode
+ */
 Mode get_mode(RXData rx_data)
 {
-   /* Prioritize rotation switch */
    if (rx_data.channels[CHAN_ROT] > DEFAULT_MID)
    {
       return MODE_CRAWL;
@@ -108,6 +117,14 @@ Mode get_mode(RXData rx_data)
    }
 }
 
+/* Poll the rotation and crawl mode switch and return the corresponding gait.
+ * The rotation switch takes priority, as it can be switched to from any gait
+ * or any stationary mode.
+ * rot HIGH -> Rotation gait
+ * cmo HIGH -> Wave gait
+ * cmo MID  -> Ripple gait
+ * cmd LOW  -> Tripod gait
+ */
 CrawlMode get_cmod(RXData rx_data)
 {
    /* Prioritize rotation switch */
@@ -135,6 +152,9 @@ CrawlMode get_cmod(RXData rx_data)
    }
 }
 
+/* Get the sequencer speed from control data. If in rotation mode, use yaw channel.
+ * In other crawl modes, use the maximum of x-y channels.
+ */
 uint16_t get_speed(RXData rx_data, CrawlMode cmod)
 {
    if (cmod == ROTATE)
@@ -147,12 +167,17 @@ uint16_t get_speed(RXData rx_data, CrawlMode cmod)
 
 }
 
+/* Return the angle of direction of travel (in radians)
+ * using the x and y channels.
+ */
 float get_angle(RXData rx_data)
 {
    return atan2f(rx_data.channels[CHAN_PITCH] - DEFAULT_MID,
                  rx_data.channels[CHAN_ROLL] - DEFAULT_MID);
 }
 
+/* Return the direction of rotation (+CW -CCW) from yaw channel.
+ */
 int16_t get_rot_dir(RXData rx_data)
 {
    return DEFAULT_MID - rx_data.channels[CHAN_YAW];
@@ -175,6 +200,8 @@ uint8_t ctrl_delta(RXData *old, RXData *new)
    return 0;
 }
 
+/* Convert rx data into a command to be used in stationary mode.
+ */
 Command to_command(RXData rxdata, Mode mode)
 {
 	Command cmd;
@@ -206,12 +233,17 @@ Command to_command(RXData rxdata, Mode mode)
 	return cmd;
 }
 
+/* Send the servo movement commands to the SSC32 for the legs in leg_bitmap using
+ * the angles in angle_delta and the given speed. For leg_bitmap, 0b00000001 represents
+ * LEG_1, 0b00000010 LEG_2, and so on. Use the macros L1 thru L6 and bitwise OR to
+ * command subsets of legs.
+ */
 void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG],
       uint16_t speed)
 {
 	int leg;
 	int servo;
-	uint32_t pw;
+	uint32_t pw;  /* Pulse width */
 
 	for (leg = 0; leg < NUM_LEGS; leg++)
 	{
@@ -251,80 +283,31 @@ void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LE
 	}
 }
 
+/* Tuned function to convert sequencer speed to servo movement speeds to be as fluid
+ * as possible i.e. not too slow such that commands seem choppy at each phase,
+ * and servos move fast enough to not cut corners between commands and the final
+ * positions are reached.
+ */
 uint16_t to_servo_speed(uint16_t seq_speed)
 {
-   uint16_t ctrl_val = seq_speed >> 6;
+   uint16_t ctrl_val = seq_speed / SPEED_SCALAR; /* Revert to raw control data */
 
    /* Piecewise function from tuning */
-   if (ctrl_val < 600)
+   if (ctrl_val < SPEED_PIECEWISE_THRESH)
    {
-      return 5 * ctrl_val / 4 + 50;
+      return SPEED_FX_1(ctrl_val);
    }
 
-   /* So servos move fast enough to keep up with sequence speed */
-   return 4 * ctrl_val - 1600;
+   /* Need steeper slope to keep up with sequence speed */
+   return SPEED_FX_2(ctrl_val);
 }
 
+/* Execute the phase based on the gait type.
+ */
 void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle,
       int16_t rot_dir)
 {
-   uint16_t servo_speed;
-
-   switch (phase)
-   {
-      case A1:
-      case A2:
-      case A3:
-         GPIOF->ODR |= GPIO_PIN_1;
-         GPIOB->ODR &= ~GPIO_PIN_4;
-         GPIOF->ODR &= ~GPIO_PIN_0;
-         break;
-
-      case B1:
-      case B2:
-      case B3:
-         GPIOF->ODR &= ~GPIO_PIN_1;
-         GPIOB->ODR |= GPIO_PIN_4;
-         GPIOF->ODR &= ~GPIO_PIN_0;
-         break;
-
-      case C1:
-      case C2:
-      case C3:
-         GPIOF->ODR |= GPIO_PIN_1;
-         GPIOB->ODR |= GPIO_PIN_4;
-         GPIOF->ODR &= ~GPIO_PIN_0;
-         break;
-
-      case D1:
-      case D2:
-      case D3:
-         GPIOF->ODR &= ~GPIO_PIN_1;
-         GPIOB->ODR &= ~GPIO_PIN_4;
-         GPIOF->ODR |= GPIO_PIN_0;
-         break;
-
-      case E1:
-      case E2:
-      case E3:
-         GPIOF->ODR |= GPIO_PIN_1;
-         GPIOB->ODR &= ~GPIO_PIN_4;
-         GPIOF->ODR |= GPIO_PIN_0;
-         break;
-
-      case F1:
-      case F2:
-      case F3:
-         GPIOF->ODR &= ~GPIO_PIN_1;
-         GPIOB->ODR |= GPIO_PIN_4;
-         GPIOF->ODR |= GPIO_PIN_0;
-         break;
-
-      default:
-         return;
-   }
-
-   servo_speed = to_servo_speed(seq_speed);
+   uint16_t servo_speed = to_servo_speed(seq_speed);
 
    switch (cmod)
    {
@@ -348,5 +331,3 @@ void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_ang
          break;
    }
 }
-
-

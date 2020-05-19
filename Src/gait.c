@@ -31,7 +31,7 @@ Command p_stroke(int16_t x_dir, int16_t y_dir, float div)
 }
 
 
-/* Start return stroke, raise leg (1/3)
+/* Start return stroke: raise leg (1/3)
  */
 Command start_r_stroke(int16_t x_dir, int16_t y_dir)
 {
@@ -48,7 +48,7 @@ Command start_r_stroke(int16_t x_dir, int16_t y_dir)
    return cmd;
 }
 
-/* Mid return stroke (2/3)
+/* Mid return stroke: move leg in air (2/3)
  */
 Command mid_r_stroke(int16_t x_dir, int16_t y_dir)
 {
@@ -65,7 +65,7 @@ Command mid_r_stroke(int16_t x_dir, int16_t y_dir)
    return cmd;
 }
 
-/* End return stroke, drop leg to ground(3/3)
+/* End return stroke: drop leg to ground(3/3)
  */
 Command end_r_stroke(int16_t x_dir, int16_t y_dir)
 {
@@ -82,7 +82,7 @@ Command end_r_stroke(int16_t x_dir, int16_t y_dir)
    return cmd;
 }
 
-/* Power stroke, yaw version
+/* Power stroke (yaw version). Has the same idea of dividing the yaw angle.
  */
 Command p_stroke_yaw(int16_t rot_angle, float div)
 {
@@ -99,7 +99,7 @@ Command p_stroke_yaw(int16_t rot_angle, float div)
    return cmd;
 }
 
-/* Start return stroke, yaw version, raise leg (1/3)
+/* Start return stroke (yaw version): raise leg (1/3)
  */
 Command start_r_stroke_yaw(int16_t rot_angle)
 {
@@ -116,7 +116,7 @@ Command start_r_stroke_yaw(int16_t rot_angle)
    return cmd;
 }
 
-/* Mid return stroke, yaw version (2/3)
+/* Mid return stroke (yaw version): move leg in air (2/3)
  */
 Command mid_r_stroke_yaw(int16_t rot_angle)
 {
@@ -133,7 +133,7 @@ Command mid_r_stroke_yaw(int16_t rot_angle)
    return cmd;
 }
 
-/* End return stroke, yaw version, drop leg to ground(3/3)
+/* End return stroke (yaw version): drop leg to ground (3/3)
  */
 Command end_r_stroke_yaw(int16_t rot_angle)
 {
@@ -150,7 +150,8 @@ Command end_r_stroke_yaw(int16_t rot_angle)
    return cmd;
 }
 
-/* Tripod phase
+/* Executes tripod phase. Fast movement, but not as stable. Three feet on ground
+ * simultaneously.
  */
 void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 {
@@ -165,8 +166,8 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    int16_t x_dir;
    int16_t y_dir;
 
-   x_dir = (STROKE_LEN / 2) * cosf(crawl_angle);
-   y_dir = (STROKE_LEN / 2) * sinf(crawl_angle);
+   x_dir = (STROKE_LEN / 2) * cosf(crawl_angle); /* x-component */
+   y_dir = (STROKE_LEN / 2) * sinf(crawl_angle); /* y-component */
 
    /* Form commands */
    switch (phase)
@@ -216,11 +217,12 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          return;
    }
 
+   /* Send and execute commands */
    set_angles(ALL_LEGS, angle_delta, servo_speed);
    ssc_cmd_cr();
 }
 
-/* Ripple phase
+/* Executes ripple phase. Less fast, but more stable.
  */
 void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 {
@@ -229,7 +231,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    Command cmd_2;
    Command cmd_3;
 
-   /* Calculate stroke angles */
+   /* Calculate stroke vector */
    int16_t x_dir;
    int16_t y_dir;
 
@@ -399,7 +401,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    ssc_cmd_cr();
 }
 
-/* Wave phase
+/* Executes wave phase: slow, but most stable.
  */
 void wave_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 {
@@ -407,35 +409,35 @@ void wave_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    Command cmd[NUM_LEGS];
    int leg;
 
-   /* Static leg phase counters: 1-15 for power stroke, 16-18 for return */
-   static uint8_t cntr[NUM_LEGS] = {16, 10, 4, 1, 7, 13};
+   /* Static leg phase counters */
+   static uint8_t cntr[NUM_LEGS] = WAVE_INIT_PHASES;
 
-   /* Calculate stroke angles */
+   /* Calculate stroke vector */
    int16_t x_dir;
    int16_t y_dir;
 
    y_dir = (STROKE_LEN / 2) * sinf(crawl_angle);
    x_dir = (STROKE_LEN / 2) * cosf(crawl_angle);
 
-   for (leg = 0; leg < 6; leg++)
+   for (leg = 0; leg < NUM_LEGS; leg++)
    {
       switch (cntr[leg])
       {
-         /* Return stroke */
-         case 16:
+         /* 3 subphases of Return stroke */
+         case WAVE_RETURN_1:
             cmd[leg] = start_r_stroke(x_dir, y_dir);
             break;
 
-         case 17:
+         case WAVE_RETURN_2:
             cmd[leg] = mid_r_stroke(x_dir, y_dir);
             break;
 
-         case 18:
+         case WAVE_RETURN_3:
             cmd[leg] = end_r_stroke(x_dir, y_dir);
             break;
 
          default:
-            /* Power stroke */
+            /* 15 subphases of power stroke */
             cmd[leg] = p_stroke(x_dir, y_dir, (float)cntr[leg]/15);
             break;
       }
@@ -455,7 +457,8 @@ void wave_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    ssc_cmd_cr();
 }
 
-/* Rotate phase: similar to tripod, but with yaw
+/* Rotate phase: similar to tripod, but with yaw. Center of body stays in place,
+ * but alternating tripod legs rotate the heading of the robot.
  */
 void rotate_phase(Phase phase, uint16_t servo_speed, int16_t rot_dir)
 {
@@ -482,6 +485,7 @@ void rotate_phase(Phase phase, uint16_t servo_speed, int16_t rot_dir)
    }
    else
    {
+      /* No rotation */
       rot_angle = 0;
    }
 
