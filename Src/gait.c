@@ -15,7 +15,7 @@ extern float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG];
  * For example, giving a div of (float)1/3 would calculate a command to move
  * to length 1/3 of the power stroke vector.
  */
-Command p_stroke(float x_dir, float y_dir, float div)
+Command p_stroke(int16_t x_dir, int16_t y_dir, float div)
 {
    Command cmd = {
          .rot_x = 0,
@@ -30,9 +30,10 @@ Command p_stroke(float x_dir, float y_dir, float div)
    return cmd;
 }
 
+
 /* Start return stroke, raise leg (1/3)
  */
-Command start_r_stroke(float x_dir, float y_dir)
+Command start_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
          .rot_x = 0,
@@ -49,7 +50,7 @@ Command start_r_stroke(float x_dir, float y_dir)
 
 /* Mid return stroke (2/3)
  */
-Command mid_r_stroke(float x_dir, float y_dir)
+Command mid_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
          .rot_x = 0,
@@ -64,9 +65,9 @@ Command mid_r_stroke(float x_dir, float y_dir)
    return cmd;
 }
 
-/* End return stroke (3/3)
+/* End return stroke, drop leg to ground(3/3)
  */
-Command end_r_stroke(float x_dir, float y_dir)
+Command end_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
          .rot_x = 0,
@@ -76,6 +77,74 @@ Command end_r_stroke(float x_dir, float y_dir)
 
    cmd.pos_x = x_dir;
    cmd.pos_y = y_dir;
+   cmd.pos_z = LEG_GROUND;
+
+   return cmd;
+}
+
+/* Power stroke, yaw version
+ */
+Command p_stroke_yaw(int16_t rot_angle, float div)
+{
+   Command cmd = {
+         .pos_x = 0,
+         .pos_y = 0,
+         .rot_x = 0,
+         .rot_y = 0
+   };
+
+   cmd.rot_z = rot_angle - 2 * rot_angle * div;
+   cmd.pos_z = LEG_GROUND; /* Leg is on the ground */
+
+   return cmd;
+}
+
+/* Start return stroke, yaw version, raise leg (1/3)
+ */
+Command start_r_stroke_yaw(int16_t rot_angle)
+{
+   Command cmd = {
+         .pos_x = 0,
+         .pos_y = 0,
+         .rot_x = 0,
+         .rot_y = 0,
+   };
+
+   cmd.rot_z = -rot_angle;
+   cmd.pos_z = LEG_RAISED;
+
+   return cmd;
+}
+
+/* Mid return stroke, yaw version (2/3)
+ */
+Command mid_r_stroke_yaw(int16_t rot_angle)
+{
+   Command cmd = {
+         .pos_x = 0,
+         .pos_y = 0,
+         .rot_x = 0,
+         .rot_y = 0,
+   };
+
+   cmd.rot_z = rot_angle;
+   cmd.pos_z = LEG_RAISED;
+
+   return cmd;
+}
+
+/* End return stroke, yaw version, drop leg to ground(3/3)
+ */
+Command end_r_stroke_yaw(int16_t rot_angle)
+{
+   Command cmd = {
+         .pos_x = 0,
+         .pos_y = 0,
+         .rot_x = 0,
+         .rot_y = 0,
+   };
+
+   cmd.rot_z = rot_angle;
    cmd.pos_z = LEG_GROUND;
 
    return cmd;
@@ -96,8 +165,8 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    int16_t x_dir;
    int16_t y_dir;
 
-   x_dir = (TRIPOD_STROKE_LEN / 2) * cosf(crawl_angle);
-   y_dir = (TRIPOD_STROKE_LEN / 2) * sinf(crawl_angle);
+   x_dir = (STROKE_LEN / 2) * cosf(crawl_angle);
+   y_dir = (STROKE_LEN / 2) * sinf(crawl_angle);
 
    /* Form commands */
    switch (phase)
@@ -164,8 +233,8 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
    int16_t x_dir;
    int16_t y_dir;
 
-   y_dir = (TRIPOD_STROKE_LEN / 2) * sinf(crawl_angle);
-   x_dir = (TRIPOD_STROKE_LEN / 2) * cosf(crawl_angle);
+   y_dir = (STROKE_LEN / 2) * sinf(crawl_angle);
+   x_dir = (STROKE_LEN / 2) * cosf(crawl_angle);
 
    /* Form and calculate command */
    switch (phase)
@@ -327,5 +396,143 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          return;
    }
 
+   ssc_cmd_cr();
+}
+
+/* Wave phase
+ */
+void wave_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
+{
+   /* 6 simultaneous commands; 1 per leg */
+   Command cmd[NUM_LEGS];
+   int leg;
+
+   /* Static leg phase counters: 1-15 for power stroke, 16-18 for return */
+   static uint8_t cntr[NUM_LEGS] = {16, 10, 4, 1, 7, 13};
+
+   /* Calculate stroke angles */
+   int16_t x_dir;
+   int16_t y_dir;
+
+   y_dir = (STROKE_LEN / 2) * sinf(crawl_angle);
+   x_dir = (STROKE_LEN / 2) * cosf(crawl_angle);
+
+   for (leg = 0; leg < 6; leg++)
+   {
+      switch (cntr[leg])
+      {
+         /* Return stroke */
+         case 16:
+            cmd[leg] = start_r_stroke(x_dir, y_dir);
+            break;
+
+         case 17:
+            cmd[leg] = mid_r_stroke(x_dir, y_dir);
+            break;
+
+         case 18:
+            cmd[leg] = end_r_stroke(x_dir, y_dir);
+            break;
+
+         default:
+            /* Power stroke */
+            cmd[leg] = p_stroke(x_dir, y_dir, (float)cntr[leg]/15);
+            break;
+      }
+
+      /* Calculate leg angles */
+      ik(cmd[leg], (1 << leg), angle_delta);
+
+      /* To next subphase on next function call */
+      cntr[leg]++;
+      if (cntr[leg] > 18)
+      {
+         cntr[leg] = 1;
+      }
+   }
+
+   set_angles(ALL_LEGS, angle_delta, servo_speed);
+   ssc_cmd_cr();
+}
+
+/* Rotate phase: similar to tripod, but with yaw
+ */
+void rotate_phase(Phase phase, uint16_t servo_speed, int16_t rot_dir)
+{
+   uint8_t leg_group_1 = L2 | L4 | L6;
+   uint8_t leg_group_2 = L1 | L3 | L5;
+
+   /* 2 phases: Mirrored commands for each subgroup */
+   Command cmd_1;
+   Command cmd_2;
+
+   /* Calculate rotation direction */
+   int16_t rot_angle;
+
+   if (rot_dir > 0)
+   {
+      /* Rotate clockwise */
+      rot_angle = ROTATION_ANGLE;
+   }
+   else if (rot_dir < 0)
+   {
+      /* Rotate counter clockwise */
+      rot_angle = -ROTATION_ANGLE;
+
+   }
+   else
+   {
+      rot_angle = 0;
+   }
+
+   /* Form commands */
+   switch (phase)
+   {
+      case A1:
+      case B1:
+         cmd_1 = p_stroke_yaw(rot_angle, (float)1/3);
+         cmd_2 = start_r_stroke_yaw(rot_angle);
+         break;
+
+      case A2:
+      case B2:
+         cmd_1 = p_stroke_yaw(rot_angle, (float)2/3);
+         cmd_2 = mid_r_stroke_yaw(rot_angle);
+         break;
+
+      case A3:
+      case B3:
+         cmd_1 = p_stroke_yaw(rot_angle, (float)3/3);
+         cmd_2 = end_r_stroke_yaw(rot_angle);
+         break;
+
+      default:
+         return;
+   }
+
+   /* Issue mirrored commands */
+   switch(phase)
+   {
+      /* Phase A: 1st half cycle */
+      case A1:
+      case A2:
+      case A3:
+         ik(cmd_1, leg_group_1, angle_delta);
+         ik(cmd_2, leg_group_2, angle_delta);
+         break;
+
+      /* Phase B: 2nd half cycle, switch leg subgroups */
+      case B1:
+      case B2:
+      case B3:
+         ik(cmd_1, leg_group_2, angle_delta);
+         ik(cmd_2, leg_group_1, angle_delta);
+         break;
+
+      default:
+         return;
+   }
+
+   set_angles(ALL_LEGS, angle_delta, servo_speed);
    ssc_cmd_cr();
 }

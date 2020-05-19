@@ -39,8 +39,9 @@ typedef enum
 #define CHAN_ARM 4
 #define CHAN_MODE 5
 #define CHAN_CMOD 6
+#define CHAN_ROT 7
 
-#define MAX_CHAN_USED 6
+#define MAX_CHAN_USED 7
 
 typedef enum
 {
@@ -49,7 +50,7 @@ typedef enum
 
 typedef enum
 {
-   TRIPOD, RIPPLE, WAVE
+   TRIPOD, RIPPLE, WAVE, ROTATE
 } CrawlMode;
 
 typedef enum
@@ -82,12 +83,14 @@ void init_stance();
 uint8_t get_arm(RXData rx_data);
 Mode get_mode(RXData rx_data);
 CrawlMode get_cmod(RXData rx_data);
-uint16_t get_speed(RXData rx_data);
+uint16_t get_speed(RXData rx_data, CrawlMode cmod);
 float get_angle(RXData rx_data);
+int16_t get_rot_dir(RXData rx_data);
 uint8_t ctrl_delta(RXData *old, RXData *new);
 Command to_command(RXData rxdata, Mode mode);
 void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG],
       uint16_t speed);
-void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle);
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle,
+      int16_t rot_dir);
 
 #endif /* INC_CONTROLS_H_ */

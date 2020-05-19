@@ -88,6 +88,12 @@ uint8_t get_arm(RXData rx_data)
 
 Mode get_mode(RXData rx_data)
 {
+   /* Prioritize rotation switch */
+   if (rx_data.channels[CHAN_ROT] > DEFAULT_MID)
+   {
+      return MODE_CRAWL;
+   }
+
    if (rx_data.channels[CHAN_MODE] > DEFAULT_MID)
    {
       return MODE_CRAWL;
@@ -104,6 +110,14 @@ Mode get_mode(RXData rx_data)
 
 CrawlMode get_cmod(RXData rx_data)
 {
+   /* Prioritize rotation switch */
+   if (rx_data.channels[CHAN_ROT] > DEFAULT_MID)
+   {
+      max_phase = B3;
+      return ROTATE;
+   }
+
+   /* Check crawl mode switch */
    if (rx_data.channels[CHAN_CMOD] > DEFAULT_MID)
    {
       max_phase = F3;
@@ -121,8 +135,12 @@ CrawlMode get_cmod(RXData rx_data)
    }
 }
 
-uint16_t get_speed(RXData rx_data)
+uint16_t get_speed(RXData rx_data, CrawlMode cmod)
 {
+   if (cmod == ROTATE)
+   {
+      return SPEED_SCALAR * abs(rx_data.channels[CHAN_YAW] - DEFAULT_MID);
+   }
    /* Calculate speed */
    return SPEED_SCALAR * MAX(abs(rx_data.channels[CHAN_PITCH] - DEFAULT_MID),
          abs(rx_data.channels[CHAN_ROLL] - DEFAULT_MID));
@@ -133,6 +151,11 @@ float get_angle(RXData rx_data)
 {
    return atan2f(rx_data.channels[CHAN_PITCH] - DEFAULT_MID,
                  rx_data.channels[CHAN_ROLL] - DEFAULT_MID);
+}
+
+int16_t get_rot_dir(RXData rx_data)
+{
+   return DEFAULT_MID - rx_data.channels[CHAN_YAW];
 }
 
 /* Compares changes in control data to a threshold.
@@ -232,18 +255,18 @@ uint16_t to_servo_speed(uint16_t seq_speed)
 {
    uint16_t ctrl_val = seq_speed >> 6;
 
-   /* Piecewise function: steeper for higher magnitude */
+   /* Piecewise function from tuning */
    if (ctrl_val < 600)
    {
       return 5 * ctrl_val / 4 + 50;
    }
-   else
-   {
-      return 2 * ctrl_val - 400;
-   }
+
+   /* So servos move fast enough to keep up with sequence speed */
+   return 4 * ctrl_val - 1600;
 }
 
-void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle)
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle,
+      int16_t rot_dir)
 {
    uint16_t servo_speed;
 
@@ -314,6 +337,11 @@ void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_ang
          break;
 
       case WAVE:
+         wave_phase(phase, servo_speed, crawl_angle);
+         break;
+
+      case ROTATE:
+         rotate_phase(phase, servo_speed, rot_dir);
          break;
 
       default:

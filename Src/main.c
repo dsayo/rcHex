@@ -58,6 +58,7 @@ volatile uint8_t ready = 0;
 volatile uint8_t delta = 0;
 uint16_t seq_speed;
 float crawl_angle;
+uint16_t rot_dir;
 uint8_t armed = 0;
 Mode mode;
 CrawlMode cmod;
@@ -168,19 +169,21 @@ int main(void)
 
 		  if (armed)
 		  {
-		      if (mode == MODE_CRAWL)
+		      switch (mode)
 		      {
-		         /* Get crawl mode, sequence speed, and angle */
-		         cmod = get_cmod(rx_data);
-		         seq_speed = get_speed(rx_data);
-		         crawl_angle = get_angle(rx_data);
+		         case MODE_CRAWL:
+		            /* Get crawl mode, sequence speed, travel angle, and rotation direction */
+		            cmod = get_cmod(rx_data);
+		            seq_speed = get_speed(rx_data, cmod);
+		            crawl_angle = get_angle(rx_data);
+		            rot_dir = get_rot_dir(rx_data);
+		            break;
 
-		      }
-		      else
-		      {
-		         /* Check deltas (if ctrls changed) */
-	            delta = ctrl_delta(&old_rx_data, &rx_data);
-	            seq_speed = 0;
+		         default: /* Stationary modes */
+		            /* Check deltas (if ctrls changed) */
+		            delta = ctrl_delta(&old_rx_data, &rx_data);
+		            seq_speed = 0;
+		            break;
 		      }
 		  }
 	  }
@@ -188,30 +191,32 @@ int main(void)
 	  /* Move if armed */
 	  if (armed)
 	  {
-        if (mode == MODE_CRAWL)
+        switch (mode)
         {
-           if (phase_ready)
-           {
-              phase_ready = 0;
-              exec_phase(phase, cmod, seq_speed, crawl_angle);
-              phase++;
-              if (phase > max_phase)
+           case MODE_CRAWL:
+              if (phase_ready)
               {
-                 phase = A1;
+                 phase_ready = 0;
+                 exec_phase(phase, cmod, seq_speed, crawl_angle, rot_dir);
+                 phase++;
+                 if (phase > max_phase)
+                 {
+                    phase = A1;
+                 }
               }
-           }
-        }
-        else
-        {
-           /* Stationary mode */
-           if (delta)
-           {
-              delta = 0;
-              cmd = to_command(rx_data, mode);
-              ik(cmd, ALL_LEGS, angle_delta);
-              set_angles(ALL_LEGS, angle_delta, 1500);
-              ssc_cmd_cr();
-           }
+              break;
+
+           default:
+              /* Stationary mode */
+              if (delta)
+              {
+                 delta = 0;
+                 cmd = to_command(rx_data, mode);
+                 ik(cmd, ALL_LEGS, angle_delta);
+                 set_angles(ALL_LEGS, angle_delta, 1500);
+                 ssc_cmd_cr();
+              }
+              break;
         }
 	  }
 	  else
