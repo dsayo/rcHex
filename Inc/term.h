@@ -1,10 +1,13 @@
-/*
+/*******************************************************************************
  * term.h
  *
- *  Created on: Jan 24, 2020
- *      Author: dsayo
+ * Terminal code to test transmit/receive SBUS parsing.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 24 Jan 2020
+ *******************************************************************************
  */
-
 #ifndef INC_TERM_H_
 #define INC_TERM_H_
 
@@ -17,3 +20,4 @@ void init_term(UART_HandleTypeDef *huart);
 void print_channels(RXData data);
 
 #endif /* INC_TERM_H_ */
+

@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * ik.c
+ *
+ * Inverse kinematics calculations.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 23 Apr 2020
+ *******************************************************************************
+ */
 #include <math.h>
 #include "ik.h"
 
@@ -14,11 +24,13 @@ const float INIT_POS_Y[NUM_LEGS] =
 const float INIT_POS_Z[NUM_LEGS] =
    {107.0f, 107.0f, 107.0f, 107.0f, 107.0f, 107.0f};
 
-/* Inverse kinematics calculation! Calculates the needed servo angles given a command
- * containing (x, y, z) body position and (roll, pitch, yaw) body orientation.
- * Lots of trigonometry. Leg subgroups are specified using the leg_bitmap argument.
+/* Inverse kinematics calculation! Calculates the needed servo angles given a
+ * command containing (x, y, z) body position and (roll, pitch, yaw) body
+ * orientation. Lots of trigonometry. Leg subgroups are specified using the
+ * leg_bitmap argument.
  */
-void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVO_PER_LEG])
+void ik(Command command, uint8_t leg_bitmap,
+      float delta[NUM_LEGS][NUM_SERVO_PER_LEG])
 {
    float total_x;
    float total_y;
@@ -43,11 +55,11 @@ void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVO_PER
    float alpha1;
    float alpha2;
    float gamma;
-   
+
    float coxa_angle;
    float femur_angle;
    float tibia_angle;
-   
+
    int leg;
 
    for (leg = 0; leg < NUM_LEGS; leg++)
@@ -118,3 +130,4 @@ void ik(Command command, uint8_t leg_bitmap, float delta[NUM_LEGS][NUM_SERVO_PER
       delta[leg][TIBIA] = tibia_angle;
    }
 }
+

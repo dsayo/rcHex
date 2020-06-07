@@ -1,8 +1,12 @@
-/*
+/*******************************************************************************
  * sbus.h
  *
- *  Created on: Jan 23, 2020
- *      Author: dsayo
+ * Parser for the FrSky XM+ SBUS protocol.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 23 Jan 2020
+ *******************************************************************************
  */
 
 #ifndef INC_SBUS_H_
@@ -33,6 +37,6 @@ typedef struct RXData {
 	uint8_t lost_frame;          /* Lost frame   */
 } RXData;
 
-void sbus_format(uint8_t *pkt, RXData *data); /* Read a packet, return true if complete, else false */
+void sbus_format(uint8_t *pkt, RXData *data);
 
 #endif /* INC_SBUS_H_ */

@@ -1,8 +1,12 @@
-/*
+/*******************************************************************************
  * controls.c
  *
- *  Created on: Feb 11, 2020
- *      Author: dsayo
+ * General control subroutines and functions for the hexapod.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 11 Feb 2020
+ *******************************************************************************
  */
 #include <math.h>
 #include "controls.h"
@@ -57,7 +61,7 @@ void powerup_stance()
 }
 
 /* Neutral stance: all servos at 0 degrees.
- */
+*/
 void neutral_stance()
 {
    int leg;
@@ -67,7 +71,8 @@ void neutral_stance()
    {
       for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
       {
-         servo_move(ssc_channel[leg][servo], CENTER_PW, NEUTRAL_SERVO_SPEED, NO_TIME);
+         servo_move(ssc_channel[leg][servo], CENTER_PW, NEUTRAL_SERVO_SPEED,
+               NO_TIME);
       }
    }
 
@@ -75,7 +80,7 @@ void neutral_stance()
 }
 
 /* Poll the arm switch and return whether it is on or not.
- */
+*/
 uint8_t get_arm(RXData rx_data)
 {
    if (rx_data.channels[CHAN_ARM] > DEFAULT_MID)
@@ -152,8 +157,8 @@ CrawlMode get_cmod(RXData rx_data)
    }
 }
 
-/* Get the sequencer speed from control data. If in rotation mode, use yaw channel.
- * In other crawl modes, use the maximum of x-y channels.
+/* Get the sequencer speed from control data. If in rotation mode, use yaw
+ * channel. In other crawl modes, use the maximum of x-y channels.
  */
 uint16_t get_speed(RXData rx_data, CrawlMode cmod)
 {
@@ -173,11 +178,11 @@ uint16_t get_speed(RXData rx_data, CrawlMode cmod)
 float get_angle(RXData rx_data)
 {
    return atan2f(rx_data.channels[CHAN_PITCH] - DEFAULT_MID,
-                 rx_data.channels[CHAN_ROLL] - DEFAULT_MID);
+         rx_data.channels[CHAN_ROLL] - DEFAULT_MID);
 }
 
 /* Return the direction of rotation (+CW -CCW) from yaw channel.
- */
+*/
 int16_t get_rot_dir(RXData rx_data)
 {
    return DEFAULT_MID - rx_data.channels[CHAN_YAW];
@@ -201,96 +206,103 @@ uint8_t ctrl_delta(RXData *old, RXData *new)
 }
 
 /* Convert rx data into a command to be used in stationary mode.
- */
+*/
 Command to_command(RXData rxdata, Mode mode)
 {
-	Command cmd;
+   Command cmd;
 
-	cmd.pos_x = 0;
-	cmd.pos_y = 0;
-   cmd.pos_z = ((int16_t)rxdata.channels[CHAN_Z] - DEFAULT_MID) / RXDATA_SCALAR_MM;
-	cmd.rot_x = 0;
-	cmd.rot_y = 0;
-   cmd.rot_z = ((int16_t)rxdata.channels[CHAN_YAW] - DEFAULT_MID) / RXDATA_SCALAR_DEG;
+   cmd.pos_x = 0;
+   cmd.pos_y = 0;
+   cmd.pos_z = ((int16_t)rxdata.channels[CHAN_Z] - DEFAULT_MID) /
+      RXDATA_SCALAR_MM;
+   cmd.rot_x = 0;
+   cmd.rot_y = 0;
+   cmd.rot_z = ((int16_t)rxdata.channels[CHAN_YAW] - DEFAULT_MID) /
+      RXDATA_SCALAR_DEG;
 
-	switch (mode)
-	{
-	   case MODE_XY:
-	      cmd.pos_x = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_ROLL]) / RXDATA_SCALAR_MM;
-	      cmd.pos_y = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_PITCH]) / RXDATA_SCALAR_MM;
-	      break;
+   switch (mode)
+   {
+      case MODE_XY:
+         cmd.pos_x = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_ROLL]) /
+            RXDATA_SCALAR_MM;
+         cmd.pos_y = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_PITCH]) /
+            RXDATA_SCALAR_MM;
+         break;
 
-	   case MODE_RPY:
-	      cmd.rot_x = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_PITCH]) / RXDATA_SCALAR_DEG;
-	      cmd.rot_y = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_ROLL]) / RXDATA_SCALAR_DEG;
+      case MODE_RPY:
+         cmd.rot_x = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_PITCH]) /
+            RXDATA_SCALAR_DEG;
+         cmd.rot_y = (DEFAULT_MID - (int16_t)rxdata.channels[CHAN_ROLL]) /
+            RXDATA_SCALAR_DEG;
+         break;
 
-	      break;
+      default:
+         break;
+   }
 
-	   default:
-	      break;
-	}
-
-	return cmd;
+   return cmd;
 }
 
-/* Send the servo movement commands to the SSC32 for the legs in leg_bitmap using
- * the angles in angle_delta and the given speed. For leg_bitmap, 0b00000001 represents
- * LEG_1, 0b00000010 LEG_2, and so on. Use the macros L1 thru L6 and bitwise OR to
- * command subsets of legs.
+/* Send the servo movement commands to the SSC32 for the legs in leg_bitmap
+ * using the angles in angle_delta and the given speed. For leg_bitmap,
+ * 0b00000001 represents LEG_1, 0b00000010 LEG_2, and so on. Use the macros L1
+ * thru L6 and bitwise OR to command subsets of legs.
  */
-void set_angles(uint8_t leg_bitmap, float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG],
-      uint16_t speed)
+void set_angles(uint8_t leg_bitmap,
+      float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG], uint16_t speed)
 {
-	int leg;
-	int servo;
-	uint32_t pw;  /* Pulse width */
+   int leg;
+   int servo;
+   uint32_t pw;  /* Pulse width */
 
-	for (leg = 0; leg < NUM_LEGS; leg++)
-	{
-	   if (!(leg_bitmap & (1 << leg)))
-	   {
-	      /* Leg not set in bitmap, no change */
-	      continue;
-	   }
+   for (leg = 0; leg < NUM_LEGS; leg++)
+   {
+      if (!(leg_bitmap & (1 << leg)))
+      {
+         /* Leg not set in bitmap, no change */
+         continue;
+      }
 
-		for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
-		{
-			switch(servo)
-			{
-				case COXA:
-					pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-					break;
+      for (servo = 0; servo < NUM_SERVO_PER_LEG; servo++)
+      {
+         switch(servo)
+         {
+            case COXA:
+               pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
+               break;
 
-				case FEMUR:  /* Mirror left leg femur/tibia servos */
-				case TIBIA:
-				   switch(leg)
-				   {
-				      case LEG_1:
-				      case LEG_2:
-				      case LEG_3:
-				         pw = CL(CENTER_PW + PW_PER_DEGREE * angle_delta[leg][servo]);
-				         break;
+            case FEMUR:  /* Mirror left leg femur/tibia servos */
+            case TIBIA:
+               switch(leg)
+               {
+                  case LEG_1:
+                  case LEG_2:
+                  case LEG_3:
+                     pw = CL(CENTER_PW + PW_PER_DEGREE *
+                           angle_delta[leg][servo]);
+                     break;
 
-				      default:
-				         pw = CL(CENTER_PW - PW_PER_DEGREE * angle_delta[leg][servo]);
-				         break;
-				   }
-				   break;
-			}
+                  default:
+                     pw = CL(CENTER_PW - PW_PER_DEGREE *
+                           angle_delta[leg][servo]);
+                     break;
+               }
+               break;
+         }
 
-			servo_move(ssc_channel[leg][servo], pw, speed, NO_TIME);
-		}
-	}
+         servo_move(ssc_channel[leg][servo], pw, speed, NO_TIME);
+      }
+   }
 }
 
-/* Tuned function to convert sequencer speed to servo movement speeds to be as fluid
- * as possible i.e. not too slow such that commands seem choppy at each phase,
- * and servos move fast enough to not cut corners between commands and the final
- * positions are reached.
+/* Tuned function to convert sequencer speed to servo movement speeds to be as
+ * fluid as possible i.e. not too slow such that commands seem choppy at each
+ * phase, and servos move fast enough to not cut corners between commands and
+ * the final positions are reached.
  */
 uint16_t to_servo_speed(uint16_t seq_speed)
 {
-   uint16_t ctrl_val = seq_speed / SPEED_SCALAR; /* Revert to raw control data */
+   uint16_t ctrl_val = seq_speed / SPEED_SCALAR; /* Revert to raw ctrl data */
 
    /* Piecewise function from tuning */
    if (ctrl_val < SPEED_PIECEWISE_THRESH)
@@ -303,9 +315,9 @@ uint16_t to_servo_speed(uint16_t seq_speed)
 }
 
 /* Execute the phase based on the gait type.
- */
-void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_angle,
-      int16_t rot_dir)
+*/
+void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed,
+      float crawl_angle, int16_t rot_dir)
 {
    uint16_t servo_speed = to_servo_speed(seq_speed);
 
@@ -331,3 +343,4 @@ void exec_phase(Phase phase, CrawlMode cmod, uint16_t seq_speed, float crawl_ang
          break;
    }
 }
+

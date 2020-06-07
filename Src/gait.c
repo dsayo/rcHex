@@ -1,8 +1,12 @@
-/*
+/*******************************************************************************
  * gait.c
  *
- *  Created on: May 13, 2020
- *      Author: dsayo
+ * Gait coordination for the movement modes.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 13 May 2020
+ *******************************************************************************
  */
 #include <math.h>
 #include "gait.h"
@@ -18,9 +22,9 @@ extern float angle_delta[NUM_LEGS][NUM_SERVO_PER_LEG];
 Command p_stroke(int16_t x_dir, int16_t y_dir, float div)
 {
    Command cmd = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
+      .rot_x = 0,
+      .rot_y = 0,
+      .rot_z = 0
    };
 
    cmd.pos_x = x_dir - 2 * x_dir * div;
@@ -32,13 +36,13 @@ Command p_stroke(int16_t x_dir, int16_t y_dir, float div)
 
 
 /* Start return stroke: raise leg (1/3)
- */
+*/
 Command start_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
+      .rot_x = 0,
+      .rot_y = 0,
+      .rot_z = 0
    };
 
    cmd.pos_x = -x_dir;
@@ -49,13 +53,13 @@ Command start_r_stroke(int16_t x_dir, int16_t y_dir)
 }
 
 /* Mid return stroke: move leg in air (2/3)
- */
+*/
 Command mid_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
+      .rot_x = 0,
+      .rot_y = 0,
+      .rot_z = 0
    };
 
    cmd.pos_x = x_dir;
@@ -66,13 +70,13 @@ Command mid_r_stroke(int16_t x_dir, int16_t y_dir)
 }
 
 /* End return stroke: drop leg to ground(3/3)
- */
+*/
 Command end_r_stroke(int16_t x_dir, int16_t y_dir)
 {
    Command cmd = {
-         .rot_x = 0,
-         .rot_y = 0,
-         .rot_z = 0
+      .rot_x = 0,
+      .rot_y = 0,
+      .rot_z = 0
    };
 
    cmd.pos_x = x_dir;
@@ -83,14 +87,14 @@ Command end_r_stroke(int16_t x_dir, int16_t y_dir)
 }
 
 /* Power stroke (yaw version). Has the same idea of dividing the yaw angle.
- */
+*/
 Command p_stroke_yaw(int16_t rot_angle, float div)
 {
    Command cmd = {
-         .pos_x = 0,
-         .pos_y = 0,
-         .rot_x = 0,
-         .rot_y = 0
+      .pos_x = 0,
+      .pos_y = 0,
+      .rot_x = 0,
+      .rot_y = 0
    };
 
    cmd.rot_z = rot_angle - 2 * rot_angle * div;
@@ -100,14 +104,14 @@ Command p_stroke_yaw(int16_t rot_angle, float div)
 }
 
 /* Start return stroke (yaw version): raise leg (1/3)
- */
+*/
 Command start_r_stroke_yaw(int16_t rot_angle)
 {
    Command cmd = {
-         .pos_x = 0,
-         .pos_y = 0,
-         .rot_x = 0,
-         .rot_y = 0,
+      .pos_x = 0,
+      .pos_y = 0,
+      .rot_x = 0,
+      .rot_y = 0,
    };
 
    cmd.rot_z = -rot_angle;
@@ -117,14 +121,14 @@ Command start_r_stroke_yaw(int16_t rot_angle)
 }
 
 /* Mid return stroke (yaw version): move leg in air (2/3)
- */
+*/
 Command mid_r_stroke_yaw(int16_t rot_angle)
 {
    Command cmd = {
-         .pos_x = 0,
-         .pos_y = 0,
-         .rot_x = 0,
-         .rot_y = 0,
+      .pos_x = 0,
+      .pos_y = 0,
+      .rot_x = 0,
+      .rot_y = 0,
    };
 
    cmd.rot_z = rot_angle;
@@ -134,14 +138,14 @@ Command mid_r_stroke_yaw(int16_t rot_angle)
 }
 
 /* End return stroke (yaw version): drop leg to ground (3/3)
- */
+*/
 Command end_r_stroke_yaw(int16_t rot_angle)
 {
    Command cmd = {
-         .pos_x = 0,
-         .pos_y = 0,
-         .rot_x = 0,
-         .rot_y = 0,
+      .pos_x = 0,
+      .pos_y = 0,
+      .rot_x = 0,
+      .rot_y = 0,
    };
 
    cmd.rot_z = rot_angle;
@@ -205,7 +209,7 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          ik(cmd_2, leg_group_2, angle_delta);
          break;
 
-      /* Phase B: 2nd half cycle, switch leg subgroups */
+         /* Phase B: 2nd half cycle, switch leg subgroups */
       case B1:
       case B2:
       case B3:
@@ -223,7 +227,7 @@ void tripod_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 }
 
 /* Executes ripple phase. Less fast, but more stable.
- */
+*/
 void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 {
    /* 3 phases */
@@ -260,7 +264,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          cmd_3 = p_stroke(x_dir, y_dir, (float)3/6);
          break;
 
-      /* C1, C3, D2: LEG_5 return stroke */
+         /* C1, C3, D2: LEG_5 return stroke */
       case C1:
          cmd_1 = p_stroke(x_dir, y_dir, (float)1/6);
          cmd_2 = start_r_stroke(x_dir, y_dir);
@@ -279,7 +283,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          cmd_3 = p_stroke(x_dir, y_dir, (float)6/6);
          break;
 
-      /* E1, E3, F2: LEG_6 return stroke */
+         /* E1, E3, F2: LEG_6 return stroke */
       case E1:
          cmd_1 = p_stroke(x_dir, y_dir, (float)4/6);
          cmd_2 = p_stroke(x_dir, y_dir, (float)1/6);
@@ -298,7 +302,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          cmd_3 = end_r_stroke(x_dir, y_dir);
          break;
 
-      /* B1, B3, C2: LEG_1 return stroke */
+         /* B1, B3, C2: LEG_1 return stroke */
       case B1:
          cmd_1 = start_r_stroke(x_dir, y_dir);
          cmd_2 = p_stroke(x_dir, y_dir, (float)1/6);
@@ -317,7 +321,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          cmd_3 = p_stroke(x_dir, y_dir, (float)6/6);
          break;
 
-      /* D1, D3, E2: LEG_3 return stroke */
+         /* D1, D3, E2: LEG_3 return stroke */
       case D1:
          cmd_1 = p_stroke(x_dir, y_dir, (float)1/6);
          cmd_2 = p_stroke(x_dir, y_dir, (float)4/6);
@@ -336,7 +340,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
          cmd_3 = end_r_stroke(x_dir, y_dir);
          break;
 
-      /* F1, F3, A2: LEG_2 return stroke */
+         /* F1, F3, A2: LEG_2 return stroke */
       case F1:
          cmd_1 = p_stroke(x_dir, y_dir, (float)4/6);
          cmd_2 = start_r_stroke(x_dir, y_dir);
@@ -402,7 +406,7 @@ void ripple_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 }
 
 /* Executes wave phase: slow, but most stable.
- */
+*/
 void wave_phase(Phase phase, uint16_t servo_speed, float crawl_angle)
 {
    /* 6 simultaneous commands; 1 per leg */
@@ -525,7 +529,7 @@ void rotate_phase(Phase phase, uint16_t servo_speed, int16_t rot_dir)
          ik(cmd_2, leg_group_2, angle_delta);
          break;
 
-      /* Phase B: 2nd half cycle, switch leg subgroups */
+         /* Phase B: 2nd half cycle, switch leg subgroups */
       case B1:
       case B2:
       case B3:
@@ -540,3 +544,4 @@ void rotate_phase(Phase phase, uint16_t servo_speed, int16_t rot_dir)
    set_angles(ALL_LEGS, angle_delta, servo_speed);
    ssc_cmd_cr();
 }
+

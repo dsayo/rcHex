@@ -1,8 +1,12 @@
-/*
+/*******************************************************************************
  * sbus.c
  *
- *  Created on: Jan 23, 2020
- *      Author: dsayo
+ * Parser for the FrSky XM+ SBUS protocol.
+ *
+ * California Polytechnic State University, San Luis Obispo
+ * Dominique Sayo
+ * 23 Jan 2020
+ *******************************************************************************
  */
 #include "sbus.h"
 
@@ -44,17 +48,28 @@ void sbus_format(uint8_t *pkt, RXData *data)
 	}
 
 	/* Extract 11-bit channel data from packet bytes */
-	data->channels[0] = 0x7FF & (((uint16_t)pkt[SHFT(1)] >> 0) | ((uint16_t)pkt[SHFT(2)] << 8));
-	data->channels[1] = 0x7FF & (((uint16_t)pkt[SHFT(2)] >> 3) | ((uint16_t)pkt[SHFT(3)] << 5));
-	data->channels[2] = 0x7FF & (((uint16_t)pkt[SHFT(3)] >> 6) | ((uint16_t)pkt[SHFT(4)] << 2) | ((uint16_t)pkt[SHFT(5)] << 10));
-	data->channels[3] = 0x7FF & (((uint16_t)pkt[SHFT(5)] >> 1) | ((uint16_t)pkt[SHFT(6)] << 7));
-	data->channels[4] = 0x7FF & (((uint16_t)pkt[SHFT(6)] >> 4) | ((uint16_t)pkt[SHFT(7)] << 4));
-	data->channels[5] = 0x7FF & (((uint16_t)pkt[SHFT(7)] >> 7) | ((uint16_t)pkt[SHFT(8)] << 1) | ((uint16_t)pkt[SHFT(9)] << 9));
-	data->channels[6] = 0x7FF & (((uint16_t)pkt[SHFT(9)] >> 2) | ((uint16_t)pkt[SHFT(10)] << 6));
-	data->channels[7] = 0x7FF & (((uint16_t)pkt[SHFT(10)] >> 5) | ((uint16_t)pkt[SHFT(11)] << 3));
+	data->channels[0] = 0x7FF & (((uint16_t)pkt[SHFT(1)] >> 0) |
+         ((uint16_t)pkt[SHFT(2)] << 8));
+	data->channels[1] = 0x7FF & (((uint16_t)pkt[SHFT(2)] >> 3) |
+         ((uint16_t)pkt[SHFT(3)] << 5));
+	data->channels[2] = 0x7FF & (((uint16_t)pkt[SHFT(3)] >> 6) |
+         ((uint16_t)pkt[SHFT(4)] << 2) |
+         ((uint16_t)pkt[SHFT(5)] << 10));
+	data->channels[3] = 0x7FF & (((uint16_t)pkt[SHFT(5)] >> 1) |
+         ((uint16_t)pkt[SHFT(6)] << 7));
+	data->channels[4] = 0x7FF & (((uint16_t)pkt[SHFT(6)] >> 4) |
+         ((uint16_t)pkt[SHFT(7)] << 4));
+	data->channels[5] = 0x7FF & (((uint16_t)pkt[SHFT(7)] >> 7) |
+         ((uint16_t)pkt[SHFT(8)] << 1) |
+         ((uint16_t)pkt[SHFT(9)] << 9));
+	data->channels[6] = 0x7FF & (((uint16_t)pkt[SHFT(9)] >> 2) |
+         ((uint16_t)pkt[SHFT(10)] << 6));
+	data->channels[7] = 0x7FF & (((uint16_t)pkt[SHFT(10)] >> 5) |
+         ((uint16_t)pkt[SHFT(11)] << 3));
 	/* Add more channels here if needed */
 
 	data->failsafe = FAILSAFE & pkt[23];
 	data->lost_frame = LOST_FRAME & pkt[23];
 	return;
 }
+

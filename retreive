@@ -1,4 +1,0 @@
-#!/bin/bash
-
-cp -r ~/STM32CubeIDE/workspace_1.2.0/rchex/Core/* .
-cp ~/STM32CubeIDE/workspace_1.2.0/rchex/rchex.ioc .
