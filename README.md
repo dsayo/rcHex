@@ -1,15 +1,14 @@
 ### Senior Design Project: rcHex
 
-<p align="center">
-    <img src="bird.gif" alt="bird" title="bird" width=300px>
-</p>
-
-
 **California Polytechnic State University, San Luis Obispo**
 
 **Spring 2020**
 
 Advisor: [Dr. Paul Hummel](https://ee.calpoly.edu/faculty/phummel/)
+
+<p align="center">
+    <img src="bird.gif" alt="bird" title="bird" width=300px>
+</p>
 
 ---
 
