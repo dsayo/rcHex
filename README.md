@@ -19,3 +19,4 @@ explores some of the design intricacies of hexapod movement, including
 gait sequencing and the application of inverse kinematics to 
 multi-jointed limbs.
 
+https://digitalcommons.calpoly.edu/cpesp/324/
