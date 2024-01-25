@@ -17,7 +17,7 @@ multi-jointed limbs.
 
 https://digitalcommons.calpoly.edu/cpesp/324/
 
---
+---
 ### Photos and Videos
 
 Testing SBUS packet parsing from the receiver visually in a terminal:
@@ -40,7 +40,7 @@ The servo control board mounted internally on the frame:
 
 ![SSC Mount](./images/ssc_mount.jpg)
 
-Transitioned from breadboard to a perfboard and 3D-printed mount:
+Transition from breadboard to a perfboard and 3D-printed mount:
 
 ![Perfboard](./images/perfboard.jpg)
 
@@ -48,7 +48,7 @@ The perfboard mounted on top of the frame:
 
 ![Perfboard mount](./images/perfboard_mount.jpg)
 
-Wiring up eighteen servos led to a rat's nest:
+Wiring up eighteen servos led to a rat's nest needing some cable management:
 
 ![Rats nest](./images/rats_nest.jpg)
 
