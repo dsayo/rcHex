@@ -6,8 +6,6 @@
 
 Advisor: [Dr. Paul Hummel](https://ee.calpoly.edu/faculty/phummel/)
 
-![Final photo](./images/demo_tripod.mp4)
-
 ---
 
 rcHex is a radio-controlled hexapod with 18 degrees of freedom, capable 
@@ -61,3 +59,7 @@ Demonstration of stationary movement ([YouTube](https://youtu.be/4tuCYG-LBBU)):
 Demonstration with tripod crawling ([YouTube](https://youtu.be/dFqTliT88VE)):
 
 [![Demo final](https://img.youtube.com/vi/dFqTliT88VE/0.jpg)](https://www.youtube.com/watch?v=dFqTliT88VE)
+
+Final build:
+
+![Final photo](./images/final.jpg)
